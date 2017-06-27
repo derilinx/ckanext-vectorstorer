@@ -35,9 +35,9 @@ def identify_resource(resource_obj):
     resource['url']=res_dict['url']
 
     data = json.dumps(resource)
-    jobs.enqueue(ckanext.vectorstorer.tasks.identify_resource, [data,user_api_key])
+    job = jobs.enqueue(ckanext.vectorstorer.tasks.identify_resource, [data,user_api_key])
     
-    res_identify = ResourceIdentify(task_id,resource['id'])
+    res_identify = ResourceIdentify(job.id, resource['id'])
     ckan.model.Session.add(res_identify)
     
     
