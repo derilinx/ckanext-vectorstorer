@@ -15,6 +15,14 @@
     {% if res.format=="WMS" and res.vectorstorer_resource %}
 	<li>{% link_for _('Edit Style'), controller='ckanext.vectorstorer.controllers.style:StyleController', action='edit_current_sld', id=pkg.name, resource_id=res.id,operation='show', class_='btn', icon='magic' %}</li>
     {% endif %}
-
+    {% if not res.vectorstorer_resource %}
+        {% if h.vectorstore_is_in_vectorstore(c.pkg.id, c.resource_id) %}
+            Already stored
+        {% else %}
+            Not stored
+        {% endif %}
+    {% else %}
+        This resource was derived from <a href="{{ h.url_for(controller='package', action='resource_read', id=c.pkg.id, resource_id=c.resource.parent_resource_id) }}">a master geospatial resource</a>.
+    {% endif %}
 {% endblock %}
 

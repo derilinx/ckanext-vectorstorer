@@ -1,11 +1,24 @@
-from ckan.plugins import SingletonPlugin, implements, IDomainObjectModification,  IConfigurable, toolkit, IResourceUrlChange, IRoutes, IConfigurer
+from ckan.plugins import SingletonPlugin, implements, IDomainObjectModification,  IConfigurable, toolkit, IResourceUrlChange, IRoutes, IConfigurer, ITemplateHelpers
 from ckan import model,logic
 from ckan.lib.base import abort
 from ckan.common import _
 import ckan
 from ckanext.vectorstorer import settings
 from ckanext.vectorstorer import resource_actions
+
 from pylons import config
+
+def isInVectorStore(package_id, resource_id):
+    parent_resource = {}
+    parent_resource['package_id'] = package_id
+    parent_resource['id'] = resource_id
+
+    child_resources = resource_actions._get_child_resources(parent_resource)
+
+    if len(child_resources) > 0:
+        return True
+    else:
+        return False
 
 class VectorStorer(SingletonPlugin):
     STATE_DELETED='deleted'
@@ -17,8 +30,13 @@ class VectorStorer(SingletonPlugin):
     implements(IConfigurer, inherit=True)
     implements(IConfigurable, inherit=True)
     implements(IResourceUrlChange)
+    implements(ITemplateHelpers)
     implements(IDomainObjectModification, inherit=True)
     
+    def get_helpers(self):
+        return {
+            'vectorstore_is_in_vectorstore': isInVectorStore
+        }
 
     def configure(self, config):
         ''' Extend the resource_delete action in order to get notification of deleted resources'''
