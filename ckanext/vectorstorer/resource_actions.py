@@ -9,6 +9,7 @@ import json
 import ckan
 from pylons import config
 from ckanext.vectorstorer import settings
+from ckanext.vectorstorer import tasks
 from ckanext.publicamundi.model.resource_identify import ResourceIdentify
 
 def _get_site_url():
@@ -35,7 +36,7 @@ def identify_resource(resource_obj):
     resource['url']=res_dict['url']
 
     data = json.dumps(resource)
-    job = jobs.enqueue(ckanext.vectorstorer.tasks.identify_resource, [data,user_api_key])
+    job = jobs.enqueue(tasks.identify_resource, [data,user_api_key])
     
     res_identify = ResourceIdentify(job.id, resource['id'])
     ckan.model.Session.add(res_identify)
@@ -67,7 +68,7 @@ def create_vector_storer_task(resource, extra_params = None):
     geoserver_context = _get_geoserver_context()
     data = json.dumps(resource_dictize(resource, {'model': model}))
     
-    jobs.enqueue(ckanext.vectorstorer.tasks.vectorstorer_upload, [geoserver_context, context, data])
+    jobs.enqueue(tasks.vectorstorer_upload, [geoserver_context, context, data])
 
 
 def update_vector_storer_task(resource):
@@ -83,7 +84,7 @@ def update_vector_storer_task(resource):
      'db_params': config['ckan.datastore.write_url']})
     geoserver_context = _get_geoserver_context()
     data = json.dumps(resource_dictize(resource, {'model': model}))
-    jobs.enqueue(ckanext.vectorstorer.tasks.vectorstorer_update, [geoserver_context, context, data])
+    jobs.enqueue(tasks.vectorstorer_update, [geoserver_context, context, data])
 
 
 def delete_vector_storer_task(resource, pkg_delete = False):
@@ -104,7 +105,7 @@ def delete_vector_storer_task(resource, pkg_delete = False):
      'user': user.get('name'),
      'db_params': config['ckan.datastore.write_url']})
     geoserver_context = _get_geoserver_context()
-    jobs.enqueue(ckanext.vectorstorer.tasks.vectorstorer_delete, [geoserver_context, context, data])
+    jobs.enqueue(tasks.vectorstorer_delete, [geoserver_context, context, data])
     if resource.has_key('vectorstorer_resource') and not pkg_delete:
         _delete_child_resources(resource)
 
