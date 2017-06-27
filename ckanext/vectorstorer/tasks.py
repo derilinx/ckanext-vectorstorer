@@ -5,6 +5,7 @@ import urllib
 import json
 import vector
 import shutil
+import random
 from db_helpers import DB
 from pyunpack import Archive
 from geoserver.catalog import Catalog
@@ -118,7 +119,7 @@ def _get_gdalDRV_filepath(resource, resource_tmp_folder,file_path):
 
 
 def _download_resource(resource,user_api_key):
-    resource_tmp_folder = settings.TMP_FOLDER + resource['id'] + '/'
+    resource_tmp_folder = settings.TMP_FOLDER + str(random.randint(1, 1000)) + resource['id'] + '/'
     file_name= None
     
     os.makedirs(resource_tmp_folder)
@@ -129,7 +130,7 @@ def _download_resource(resource,user_api_key):
 	file_name= _get_tmp_file_path(resource_tmp_folder,resource)
 	request = urllib2.Request(resource_url)
 	request.add_header('Authorization', user_api_key)
-	resource_download_request = urllib2.urlopen(request)
+        resource_download_request = urllib2.urlopen(request)
 	downloaded_resource = open( file_name, 'wb')
 	downloaded_resource.write(resource_download_request.read())
 	downloaded_resource.close()
