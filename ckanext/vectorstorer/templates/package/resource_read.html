@@ -3,7 +3,7 @@
 {% block resource_actions_inner %}
     {{super()}}
     
-     {% if res.vectorstorer_resource and res.format=='db_table' %}
+     {% if res.vectorstorer_resource and res.format=='DB_TABLE' %}
 	 
 	 
 	  
@@ -12,7 +12,7 @@
       
 
     {% endif %}
-    {% if res.format=="wms" and res.vectorstorer_resource %}
+    {% if res.format=="WMS" and res.vectorstorer_resource %}
 	<li>{% link_for _('Edit Style'), controller='ckanext.vectorstorer.controllers.style:StyleController', action='edit_current_sld', id=pkg.name, resource_id=res.id,operation='show', class_='btn', icon='magic' %}</li>
     {% endif %}
 

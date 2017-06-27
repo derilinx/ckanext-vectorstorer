@@ -159,6 +159,8 @@ def _handle_vector(_vector, layer_idx, resource, context, geoserver_context):
     layer = _vector.get_layer(layer_idx)
     if layer and layer.GetFeatureCount() > 0:
         layer_name = layer.GetName()
+        if 'OGR' in layer_name:
+            layer_name = _vector.gdal_driver
         geom_name = _vector.get_geometry_name(layer)
         srs_epsg = int(_vector.get_SRS(layer))
         spatial_ref = settings.osr.SpatialReference()
@@ -172,14 +174,14 @@ def _handle_vector(_vector, layer_idx, resource, context, geoserver_context):
 
 
 def _add_db_table_resource(context, resource, geom_name, layer_name):
-    db_table_resource = DBTableResource(context['package_id'], layer_name, resource['description'], resource['id'], resource['url'], geom_name)
+    db_table_resource = DBTableResource(context['package_id'], layer_name, "Datastore resource available in CKAN and GeoServer Store", resource['id'], resource['url'], geom_name)
     db_res_as_dict = db_table_resource.get_as_dict()
     created_db_table_resource = _api_resource_action(context, db_res_as_dict, RESOURCE_CREATE_ACTION)
     return created_db_table_resource
 
 
 def _add_wms_resource(context, layer_name, parent_resource, wms_server, wms_layer):
-    wms_resource = WMSResource(context['package_id'], layer_name, parent_resource['description'], parent_resource['id'], wms_server, wms_layer)
+    wms_resource = WMSResource(context['package_id'], layer_name, "WMS publishing of the GeoServer layer", parent_resource['id'], wms_server, wms_layer)
     wms_res_as_dict = wms_resource.get_as_dict()
     created_wms_resource = _api_resource_action(context, wms_res_as_dict, RESOURCE_CREATE_ACTION)
     return created_wms_resource

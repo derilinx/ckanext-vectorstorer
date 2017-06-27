@@ -1,7 +1,7 @@
 from urlparse import urlparse, urljoin
 
 class WMSResource:
-    name_extention=" WMS Layer"
+    name_extention=" Web Map Service in GeoServer"
     _get_capabilities_url="?service=WMS&request=GetCapabilities"
     _name= None
     _description= None
@@ -40,7 +40,7 @@ class WMSResource:
 	return resource
 	
 class DBTableResource:
-    name_extention=" Data Preview"
+    name_extention=" in Datastore via GeoServer"
     _name= None
     _description= None
     _package_id= None
