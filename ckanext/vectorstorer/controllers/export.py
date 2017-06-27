@@ -2,7 +2,7 @@ import os
 import zipfile
 import uuid
 from pylons import config, Response
-from ckan.lib.base import BaseController, c, g, request, \
+from ckan.lib.base import BaseController, c, request, \
     response, session, render, config, abort
 
 from ckan.logic import get_action ,check_access, model
@@ -264,7 +264,7 @@ class ExportController(BaseController):
         user_filename = '_'.join(filepath.split('/')[-2:])
         file_size = os.path.getsize(filepath)
 
-        headers = [('Content-Disposition', 'attachment; filename=\"' + resource_name + '.zip\"'),
+        headers = [('Content-Disposition', 'attachment; filename=\"exported_geometry.zip\"'),#Avoid unicode issues: + resource_name + '.zip\"'),
                    ('Content-Type', 'text/plain'),
                    ('Content-Length', str(file_size))]
 
