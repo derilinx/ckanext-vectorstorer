@@ -27,8 +27,5 @@ setup(
         [ckan.plugins]
 	 
 	vectorstorer=ckanext.vectorstorer.plugin:VectorStorer
-	
-	[ckan.celery_task]
-	tasks = ckanext.vectorstorer.celery_import:task_imports
 	""",
 )

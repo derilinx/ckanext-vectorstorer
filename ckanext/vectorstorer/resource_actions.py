@@ -1,8 +1,7 @@
 import ckan.lib.helpers as h
 from ckan.lib.dictization.model_dictize import resource_dictize
 from ckan.logic import get_action
-from ckan.lib.celery_app import celery
-from ckan.model.types import make_uuid
+import ckan.lib.jobs as jobs
 from ckan import model, logic
 from ckan.lib.base import abort
 from ckan.common import _
@@ -34,10 +33,9 @@ def identify_resource(resource_obj):
     '''With resource_dictize we get the correct resource url even if dataset is in draft state   '''
     
     resource['url']=res_dict['url']
-    task_id = make_uuid()
 
     data = json.dumps(resource)
-    celery.send_task('vectorstorer.identify_resource', args=[data,user_api_key], task_id=task_id)
+    jobs.enqueue(ckanext.vectorstorer.tasks.identify_resource, [data,user_api_key])
     
     res_identify = ResourceIdentify(task_id,resource['id'])
     ckan.model.Session.add(res_identify)
@@ -68,8 +66,8 @@ def create_vector_storer_task(resource, extra_params = None):
     context = json.dumps(cont)
     geoserver_context = _get_geoserver_context()
     data = json.dumps(resource_dictize(resource, {'model': model}))
-    task_id = make_uuid()
-    celery.send_task('vectorstorer.upload', args=[geoserver_context, context, data], task_id=task_id)
+    
+    jobs.enqueue(ckanext.vectorstorer.tasks.vectorstorer_upload, [geoserver_context, context, data])
 
 
 def update_vector_storer_task(resource):
@@ -85,8 +83,7 @@ def update_vector_storer_task(resource):
      'db_params': config['ckan.datastore.write_url']})
     geoserver_context = _get_geoserver_context()
     data = json.dumps(resource_dictize(resource, {'model': model}))
-    task_id = make_uuid()
-    celery.send_task('vectorstorer.update', args=[geoserver_context, context, data], task_id=task_id)
+    jobs.enqueue(ckanext.vectorstorer.tasks.vectorstorer_update, [geoserver_context, context, data])
 
 
 def delete_vector_storer_task(resource, pkg_delete = False):
@@ -107,8 +104,7 @@ def delete_vector_storer_task(resource, pkg_delete = False):
      'user': user.get('name'),
      'db_params': config['ckan.datastore.write_url']})
     geoserver_context = _get_geoserver_context()
-    task_id = make_uuid()
-    celery.send_task('vectorstorer.delete', args=[geoserver_context, context, data], task_id=task_id)
+    jobs.enqueue(ckanext.vectorstorer.tasks.vectorstorer_delete, [geoserver_context, context, data])
     if resource.has_key('vectorstorer_resource') and not pkg_delete:
         _delete_child_resources(resource)
 

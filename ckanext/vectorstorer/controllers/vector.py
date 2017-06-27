@@ -6,7 +6,6 @@ import ckan
 from ckan.common import _
 from ckanext.vectorstorer.settings import osr
 from ckanext.vectorstorer import resource_actions
-from ckan.lib.celery_app import celery
 from ckan.model.types import make_uuid
 from ckan.lib.dictization.model_dictize import resource_dictize
 _check_access = check_access

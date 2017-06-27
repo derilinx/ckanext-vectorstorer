@@ -2,7 +2,6 @@ import zipfile
 import os
 import urllib2
 import urllib
-from ckan.lib.celery_app import celery
 import json
 import vector
 import shutil
@@ -17,7 +16,6 @@ RESOURCE_CREATE_ACTION = 'resource_create'
 RESOURCE_UPDATE_ACTION = 'resource_update'
 RESOURCE_DELETE_ACTION = 'resource_delete'
 
-@celery.task(name='vectorstorer.identify_resource')
 def identify_resource(data,user_api_key):
     resource = json.loads(data)
     json_result = _identify(resource,user_api_key)
@@ -53,7 +51,6 @@ def _identify(resource,user_api_key):
     _delete_temp(resource_tmp_folder)
 
 
-@celery.task(name='vectorstorer.upload', max_retries=168, default_retry_delay=3600)
 def vectorstorer_upload(geoserver_cont, cont, data):
     resource = json.loads(data)
     context = json.loads(cont)
@@ -258,7 +255,6 @@ def _update_resource_metadata(context, resource):
     urllib2.urlopen(request, data_string)
 
 
-@celery.task(name='vectorstorer.update', max_retries=168, default_retry_delay=3600)
 def vectorstorer_update(geoserver_cont, cont, data):
     resource = json.loads(data)
     context = json.loads(cont)
@@ -276,7 +272,6 @@ def vectorstorer_update(geoserver_cont, cont, data):
     _handle_resource(resource, db_conn_params, context, geoserver_context)
 
 
-@celery.task(name='vectorstorer.delete', max_retries=168, default_retry_delay=3600)
 def vectorstorer_delete(geoserver_cont, cont, data):
     resource = json.loads(data)
     context = json.loads(cont)
