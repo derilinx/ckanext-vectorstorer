@@ -3,7 +3,8 @@ from xml.dom import minidom
 from pylons import config
 from geoserver.catalog import Catalog
 from ckan.lib.base import BaseController, c, request, \
-                          response, session, render, config, abort, redirect
+                          response, session, render, config, abort
+from ckan.plugins import toolkit
 
 from geoserver.catalog import UploadError
 from ckan.logic import *
@@ -11,6 +12,8 @@ from ckan.common import _
 _check_access = check_access
 
 NoFileSelected='No XML file was selected.'
+
+redirect = toolkit.redirect_to
 
 class NotVectorStorerWMS(Exception):
     pass
