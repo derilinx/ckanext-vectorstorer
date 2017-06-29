@@ -163,6 +163,7 @@ def _handle_vector(_vector, layer_idx, resource, context, geoserver_context):
         layer_name = layer.GetName()
         if 'OGR' in layer_name:
             layer_name = _vector.gdal_driver
+        layer_name = resource['name'] + ' - ' + layer_name
         geom_name = _vector.get_geometry_name(layer)
         srs_epsg = int(_vector.get_SRS(layer))
         spatial_ref = settings.osr.SpatialReference()
