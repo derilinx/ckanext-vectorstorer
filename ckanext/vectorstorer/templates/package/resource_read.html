@@ -43,8 +43,8 @@
       if (!epsg) return;
       $.get("/api/vector/publish?resource_id={{ c.resource.id }}&projection=" + epsg, function() {
           $('.flash-messages').append('<div class=\"alert fade in alert-info\">Submitted resource {{ c.resource.id }} to Datastore and GeoServer using EPSG:' + epsg + '<a class=\"close\" href=\"#\">&#215;</a></div>');
-        }).fail(function() {
-          $('.flash-messages').append('<div class=\"alert fade in alert-error\">Could not submit resource {{ c.resource.id }} to Datastore and GeoServer. Error: ' + error + '<a class=\"close\" href=\"#\">&#215;</a></div>');
+        }).fail(function(jqXHR, errorStatus, errorThrown) {
+          $('.flash-messages').append('<div class=\"alert fade in alert-error\">Could not submit resource {{ c.resource.id }} to Datastore and GeoServer. Error: ' + errorStatus + ' <a class=\"close\" href=\"#\">&#215;</a></div>');
         });     
 }
   </script>
