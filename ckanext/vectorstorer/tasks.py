@@ -14,6 +14,7 @@ import ckan.plugins.toolkit as toolkit
 from ckanext.vectorstorer import settings
 import cgi
 
+RESOURCE_CREATE_DEFAULT_VIEWS_ACTION = 'resource_create_default_resource_views'
 RESOURCE_CREATE_ACTION = 'resource_create'
 RESOURCE_UPDATE_ACTION = 'resource_update'
 RESOURCE_DELETE_ACTION = 'resource_delete'
@@ -170,6 +171,8 @@ def _handle_vector(_vector, layer_idx, resource, context, geoserver_context):
         spatial_ref.ImportFromEPSG(srs_epsg)
         srs_wkt = spatial_ref.ExportToWkt()
         created_db_table_resource = _add_db_table_resource(context, resource, geom_name, layer_name)
+        resource['id'] = created_db_table_resource['id'].lower();
+        _add_db_table_resource_view(context, resource)
         layer = _vector.get_layer(layer_idx)
         _vector.handle_layer(layer, geom_name, created_db_table_resource['id'].lower())
         wms_server, wms_layer = _publish_layer(geoserver_context, created_db_table_resource, srs_wkt)
@@ -182,6 +185,9 @@ def _add_db_table_resource(context, resource, geom_name, layer_name):
     created_db_table_resource = _api_resource_action(context, db_res_as_dict, RESOURCE_CREATE_ACTION)
     return created_db_table_resource
 
+def _add_db_table_resource_view(context, resource):
+    payload = {"resource": resource, "create_datastore_views": True}
+    _api_resource_action(context, payload, RESOURCE_CREATE_DEFAULT_VIEWS_ACTION)
 
 def _add_wms_resource(context, layer_name, parent_resource, wms_server, wms_layer):
     wms_resource = WMSResource(context['package_id'], layer_name, "WMS publishing of the GeoServer layer \"" + layer_name + "\" stored in [this resource](" + parent_resource['id']  + ")", parent_resource['id'], wms_server, wms_layer)
