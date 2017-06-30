@@ -18,8 +18,15 @@ class WMSResource:
 	self._name=name + self.name_extention
 	self._description=description
 	base_url = urlparse(wms_server)
-
-	self._url=urljoin( base_url.netloc,self._get_capabilities_url)
+        simple_url = urljoin( base_url.netloc,self._get_capabilities_url)
+        simple_url_parts = simple_url.split('/')
+        last_part = simple_url_parts[-1] #i.e. wms?service.... etc
+        first_part = join(simple_url_parts[0:-1], '/')
+        wms_parts = wms_layer.split(':')
+        workspace = wms_parts[0]
+        layer = wms_parts[1]
+	#This is a filtered GetCapabilities URL so that CKAN etc. still gets what's expected but only this layer
+        self._url=first_part + '/' + workspace + '/' + layer + '/' +  last_part
 	self._parent_resource_id=parent_resource_id
 	self._wms_server=wms_server
 	self._wms_layer=wms_layer
