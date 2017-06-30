@@ -46,6 +46,7 @@ class DBTableResource:
     _package_id= None
     _url= None
     _format= 'DB_TABLE'
+    _datastore_active=True
     _parent_resource_id=None
     _geometry= None
     _vectorstorer_resource= u'vectorstorer_db'
@@ -67,7 +68,8 @@ class DBTableResource:
 	  "parent_resource_id":self._parent_resource_id,
 	  "geometry":self._geometry,
 	  'vectorstorer_resource': self._vectorstorer_resource,
-	  "name":self._name,
+	  "datastore_active": self._datastore_active,
+          "name":self._name,
 	  "description": self._description }
 	
 	return resource
