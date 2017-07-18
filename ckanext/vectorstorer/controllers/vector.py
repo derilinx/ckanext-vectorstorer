@@ -73,13 +73,11 @@ class VectorController(BaseController):
       
     def _get_projection(self):
 	try:
-
 	    proj_param=request.params.get('projection',u'')
 	    _projection=int(proj_param)
 	    _spatial_ref = osr.SpatialReference()
 	    _spatial_ref.ImportFromEPSG(_projection)
-	   
-	except ValueError:
+        except ValueError:
 	    abort(400, _('Bad EPSG code : %s') % proj_param)
 	except RuntimeError:
 	    abort(400, _('Bad EPSG code : %s') % proj_param)

@@ -18,24 +18,24 @@ class WMSResource:
 	self._name=name + self.name_extention
 	self._description=description
 	base_url = urlparse(wms_server)
-        simple_url = urljoin( base_url.netloc,self._get_capabilities_url)
-        simple_url_parts = simple_url.split('/')
-        last_part = simple_url_parts[-1] #i.e. wms?service.... etc
-        first_part = join(simple_url_parts[0:-1], '/')
-        wms_parts = wms_layer.split(':')
-        workspace = wms_parts[0]
-        layer = wms_parts[1]
-	#This is a filtered GetCapabilities URL so that CKAN etc. still gets what's expected but only this layer
-        self._url=first_part + '/' + workspace + '/' + layer + '/' +  last_part
+        self._url=urljoin( base_url.netloc,self._get_capabilities_url)
 	self._parent_resource_id=parent_resource_id
 	self._wms_server=wms_server
 	self._wms_layer=wms_layer
 	
 	
     def get_as_dict(self):
-	resource = {
+        server_parts = self._wms_server.split('/')
+	without_wms = server_parts[0:-1]
+        with_wms = server_parts[-1]
+        base = '/'.join(without_wms)
+        layer_parts = self._wms_layer.split(':')
+        #Filtered GetCapabilties URL
+        url = base + '/' + layer_parts[0] + '/' + layer_parts[1] + '/' + with_wms + self._get_capabilities_url 
+        resource = {
 	  "package_id":unicode(self._package_id),
 	  "url":self._wms_server + self._get_capabilities_url,
+          "layer_url": url,
 	  "format":self._format,
 	  "parent_resource_id":self._parent_resource_id,
 	  'vectorstorer_resource': self._vectorstorer_resource,
@@ -52,6 +52,7 @@ class DBTableResource:
     _description= None
     _package_id= None
     _url= None
+    _url_type='datastore'
     _format= 'DB_TABLE'
     _datastore_active=True
     _parent_resource_id=None
@@ -71,7 +72,8 @@ class DBTableResource:
 	resource = {
 	  "package_id":unicode(self._package_id),
 	  "url":self._url,
-	  "format":self._format,
+	  "url_type":self._url_type,
+          "format":self._format,
 	  "parent_resource_id":self._parent_resource_id,
 	  "geometry":self._geometry,
 	  'vectorstorer_resource': self._vectorstorer_resource,

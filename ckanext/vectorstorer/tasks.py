@@ -95,7 +95,7 @@ def _get_gdalDRV_filepath(resource, resource_tmp_folder,file_path):
     _file_path = os.path.join(resource_tmp_folder,file_path)
     prj_exists = None
     
-    if resource_format in settings.ARCHIVE_FORMATS:
+    if resource_format.lower() in settings.ARCHIVE_FORMATS:
         Archive(_file_path).extractall(resource_tmp_folder)
         is_shp, _file_path, prj_exists = _is_shapefile(resource_tmp_folder)
         if is_shp:
@@ -171,16 +171,17 @@ def _handle_vector(_vector, layer_idx, resource, context, geoserver_context):
         spatial_ref.ImportFromEPSG(srs_epsg)
         srs_wkt = spatial_ref.ExportToWkt()
         created_db_table_resource = _add_db_table_resource(context, resource, geom_name, layer_name)
-        resource['id'] = created_db_table_resource['id'].lower();
-        _add_db_table_resource_view(context, resource)
         layer = _vector.get_layer(layer_idx)
         _vector.handle_layer(layer, geom_name, created_db_table_resource['id'].lower())
         wms_server, wms_layer = _publish_layer(geoserver_context, created_db_table_resource, srs_wkt)
         _add_wms_resource(context, layer_name, created_db_table_resource, wms_server, wms_layer)
-
+        try:
+            _add_db_table_resource_view(context, created_db_table_resource)
+        except:
+            pass #This currently fails because of https://github.com/ckan/ckan/pull/3444#issuecomment-312216983
 
 def _add_db_table_resource(context, resource, geom_name, layer_name):
-    db_table_resource = DBTableResource(context['package_id'], layer_name, "Datastore resource derived from \"" + layer_name + "\" in [this resource](" + resource['id'] + "), available in CKAN and GeoServer Store", resource['id'], resource['url'], geom_name)
+    db_table_resource = DBTableResource(context['package_id'], layer_name, "Datastore resource derived from \"" + layer_name + "\" in [this resource](" + resource['id'] + "), available in CKAN and GeoServer Store", resource['id'], 'http://_datastore_only_resource', geom_name)
     db_res_as_dict = db_table_resource.get_as_dict()
     created_db_table_resource = _api_resource_action(context, db_res_as_dict, RESOURCE_CREATE_ACTION)
     return created_db_table_resource

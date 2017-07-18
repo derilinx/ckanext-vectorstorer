@@ -54,7 +54,10 @@ class Vector:
             srs_osr.ImportFromESRI([prj])
             epsg = srs_osr.GetAuthorityCode(None)
             if epsg is None or epsg == 0:
-                epsg = self.default_epsg
+                srs_osr.AutoIdentifyEPSG()
+                epsg = srs_osr.GetAuthorityCode(None)
+                if epsg is None or epsg == 0:
+                    epsg = self.default_epsg
             return epsg
         else:
             return self.default_epsg
