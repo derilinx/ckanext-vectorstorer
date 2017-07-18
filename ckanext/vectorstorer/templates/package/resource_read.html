@@ -46,7 +46,7 @@
   <script>
     var upload = function() {
       do {
-        var epsg = prompt("Please enter the EPSG code for the projection of the data (without \"EPSG:\"/numbers only)", "4326");
+        var epsg = prompt("Please enter the EPSG code for the projection of the data (without \"EPSG:\"/numbers only). You can accept the default value for Shapefiles as it will always be ignored and replaced with a projection based on the archive.", "4326");
       }
       while (epsg && !parseInt(epsg))
     
