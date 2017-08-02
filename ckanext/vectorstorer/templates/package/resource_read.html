@@ -11,9 +11,9 @@
 
 
     {% endif %}
-    {% if res.format=="WMS" and res.vectorstorer_resource %}
+    {# {% if res.format=="WMS" and res.vectorstorer_resource %}
 	<li>{% link_for _('Edit Style'), controller='ckanext.vectorstorer.controllers.style:StyleController', action='edit_current_sld', id=pkg.name, resource_id=res.id,operation='show', class_='btn', icon='magic' %}</li>
-    {% endif %}
+    {% endif %} #}
     
     {% if not res.vectorstorer_resource %}
        {% if h.vectorstore_is_in_vectorstore(c.pkg.id, c.resource_id) %}
