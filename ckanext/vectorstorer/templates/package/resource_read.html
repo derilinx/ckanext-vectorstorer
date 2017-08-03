@@ -82,7 +82,7 @@
   DOMReady(function() {
 $.ajax({
     type: "GET" ,
-    url: uparts[0] + "://" + uparts[1] + ":8085/geoserver/odm/" + "{{ c.resource.id }}" + "/wms?service=WMS&request=GetCapabilities" ,
+    url: uparts[0] + "://" + uparts[1] + "/geoserver/odm/" + "{{ c.resource.id }}" + "/wms?service=WMS&request=GetCapabilities" ,
     dataType: "xml" ,
     success: function(data) {  
 var bounds = $(data).find('EX_GeographicBoundingBox').text();  
