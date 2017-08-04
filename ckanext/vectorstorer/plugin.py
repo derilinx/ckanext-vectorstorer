@@ -20,6 +20,9 @@ def isInVectorStore(package_id, resource_id):
     else:
         return False
 
+def supportedFormat(format):
+    return format.lower() in settings.SUPPORTED_DATA_FORMATS
+
 class VectorStorer(SingletonPlugin):
     STATE_DELETED='deleted'
     
@@ -35,7 +38,8 @@ class VectorStorer(SingletonPlugin):
     
     def get_helpers(self):
         return {
-            'vectorstore_is_in_vectorstore': isInVectorStore
+            'vectorstore_is_in_vectorstore': isInVectorStore,
+            'vectorstore_supported_format': supportedFormat
         }
 
     def configure(self, config):

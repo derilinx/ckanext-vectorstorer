@@ -18,7 +18,7 @@
     {% if not res.vectorstorer_resource %}
        {% if h.vectorstore_is_in_vectorstore(c.pkg.id, c.resource_id) %}
             <button class="btn btn-success btn-disabled"><i class="fa fa-globe"></i><i class="fa fa-check"></i> GeoData imported</button>
-        {% else %}
+        {% elif h.vectorstore_supported_format(res.format) and h.check_access('package_update', {'id':pkg.id }) %}
             {# Add check for geo formats #}
             <a class="btn btn-success" href="#" onclick="upload()"><i class="fa fa-upload"></i><i class="fa fa-globe"></i> Import GeoData</a>
         {% endif %}
@@ -75,6 +75,7 @@
           $('.flash-messages').append('<div class=\"alert fade in alert-error\">Could not submit resource {{ c.resource.id }} to Datastore and GeoServer. Error: ' + errorStatus + ' <a class=\"close\" href=\"#\">&#215;</a></div>');
         });     
 }
+   {% if res.format=="DB_TABLE" and res.vectorstorer_resource %}
    {# We don't have jQuery until later #}
    {# https://gist.github.com/dciccale/4087856 #}
    var DOMReady = function(a,b,c){b=document,c='addEventListener';b[c]?b[c]('DOMContentLoaded',a):window.attachEvent('onload',a)}
@@ -90,6 +91,7 @@ console.log(bounds);
   $("#geoserver_bounds").html(bounds);
 }});
   });
+  {% endif %}
   </script>
 {% endblock %}
 
