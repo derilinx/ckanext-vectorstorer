@@ -50,7 +50,11 @@
             <tbody>
               <tr>
                 <th scope="row">Bounds</th>
-                <td id="geoserver_bounds">JS, please put something here!</td>
+                <td id="geoserver_bounds">Please wait...</td>
+              </tr>
+              <tr>
+                <th scope="row">Coordinate Reference Systems (stored)</th>
+                <td id="geoserver_crs">Please wait...</td>
               </tr>
             </tbody>
           </table>
@@ -86,9 +90,18 @@ $.ajax({
     url: uparts[0] + "://" + uparts[1] + "/geoserver/odm/" + "{{ c.resource.id }}" + "/wms?service=WMS&request=GetCapabilities" ,
     dataType: "xml" ,
     success: function(data) {  
-var bounds = $(data).find('EX_GeographicBoundingBox').text();  
-console.log(bounds);
-  $("#geoserver_bounds").html(bounds);
+        var wBL = $(data).find('westBoundLongitude')[0].innerHTML;  
+        var eBL = $(data).find('eastBoundLongitude')[0].innerHTML; 
+        var sBL = $(data).find('southBoundLatitude')[0].innerHTML; 
+        var nBL = $(data).find('northBoundLatitude')[0].innerHTML; 
+        var crs = $(data).find('Layer')[1];
+        crs = $(crs).find('CRS');
+        crstext = "";
+        for (var c=0;c<crs.length;c++) {
+                crstext += crs[c].innerHTML + "<br>";
+        }
+  $("#geoserver_bounds").html("<em>West</em>: " + wBL + "<br><em>East</em>: " + eBL + "<br><em>South</em>: " + sBL + "<br><em>North</em>: " + nBL);
+  $("#geoserver_crs").html(crstext);
 }});
   });
   {% endif %}
