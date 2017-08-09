@@ -3,14 +3,6 @@
 {% block resource_actions_inner %}
     {{super()}}
     
-     {% if res.vectorstorer_resource and res.format=='DB_TABLE' %}
-	 
-	 
-	  
-	   <li>{% link_for _('Export'), controller='ckanext.vectorstorer.controllers.export:ExportController', action='export',operation='index', id=pkg.name, resource_id=res.id, class_='btn', icon='magic' %}</li>
-
-
-    {% endif %}
     {# {% if res.format=="WMS" and res.vectorstorer_resource %}
 	<li>{% link_for _('Edit Style'), controller='ckanext.vectorstorer.controllers.style:StyleController', action='edit_current_sld', id=pkg.name, resource_id=res.id,operation='show', class_='btn', icon='magic' %}</li>
     {% endif %} #}
@@ -26,8 +18,17 @@
         {% if res.format=="WMS" and res.vectorstorer_resource %}
           <a class="btn btn-success" href="{{ h.url_for(controller='package', action='resource_read', id=c.pkg.id, resource_id=c.resource.parent_resource_id) }}"><i class="fa fa-files-o"></i><i class="fa fa-globe"></i> View Geo-Data</a>        
         {% elif res.format=="DB_TABLE" and res.vectorstorer_resource %}
+          <a class="btn btn-success" href="{{ h.get_site_protocol_and_host() | join('://')  }}/geoserver/csw?service=CSW&version=2.0.2&request=GetRecordById&id=odm:{{ c.resource.id }}&typeNames=gmd:MD_Metadata&resultType=results&elementSetName=full&outputSchema=http://www.isotc211.org/2005/gmd"><i class="fa fa-flask"></i> OGC CSW API</a> 
           <a class="btn btn-success" href="{{ h.url_for(controller='package', action='resource_read', id=c.pkg.id, resource_id=c.resource.parent_resource_id) }}"><i class="fa fa-level-up"></i><i class="fa fa-globe"></i> View Geo-Source</a> 
         {% endif %}
+    {% endif %}
+    {% if res.vectorstorer_resource and res.format=='DB_TABLE' %}
+
+
+
+           <li>{% link_for _('Export'), controller='ckanext.vectorstorer.controllers.export:ExportController', action='export',operation='index', id=pkg.name, resource_id=res.id, class_='btn', icon='magic' %}</li>
+
+
     {% endif %}
 {% endblock %}
 
