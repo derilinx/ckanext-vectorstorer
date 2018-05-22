@@ -14,6 +14,10 @@ import ckan.plugins.toolkit as toolkit
 from ckanext.vectorstorer import settings
 import cgi
 
+import logging
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
+
 RESOURCE_CREATE_DEFAULT_VIEWS_ACTION = 'resource_create_default_resource_views'
 RESOURCE_CREATE_ACTION = 'resource_create'
 RESOURCE_UPDATE_ACTION = 'resource_update'
@@ -159,6 +163,7 @@ def _get_tmp_file_path(resource_tmp_folder, resource):
 
 
 def _handle_vector(_vector, layer_idx, resource, context, geoserver_context):
+    log.debug('handle_vector')
     layer = _vector.get_layer(layer_idx)
     if layer and layer.GetFeatureCount() > 0:
         layer_name = layer.GetName()
@@ -181,16 +186,19 @@ def _handle_vector(_vector, layer_idx, resource, context, geoserver_context):
             pass #This currently fails because of https://github.com/ckan/ckan/pull/3444#issuecomment-312216983
 
 def _add_db_table_resource(context, resource, geom_name, layer_name):
+    log.debug('adding db table resource')
     db_table_resource = DBTableResource(context['package_id'], layer_name, "Datastore resource derived from \"" + layer_name + "\" in [this resource](" + resource['id'] + "), available in CKAN and GeoServer Store", resource['id'], 'http://_datastore_only_resource', geom_name)
     db_res_as_dict = db_table_resource.get_as_dict()
     created_db_table_resource = _api_resource_action(context, db_res_as_dict, RESOURCE_CREATE_ACTION)
     return created_db_table_resource
 
 def _add_db_table_resource_view(context, resource):
+    log.debug('adding db table resource view')
     payload = {"resource": resource, "create_datastore_views": True}
     _api_resource_action(context, payload, RESOURCE_CREATE_DEFAULT_VIEWS_ACTION)
 
 def _add_wms_resource(context, layer_name, parent_resource, wms_server, wms_layer):
+    log.debug('adding wms resource')
     wms_resource = WMSResource(context['package_id'], layer_name, "WMS publishing of the GeoServer layer \"" + layer_name + "\" stored in [this resource](" + parent_resource['id']  + ")", parent_resource['id'], wms_server, wms_layer)
     wms_res_as_dict = wms_resource.get_as_dict()
     created_wms_resource = _api_resource_action(context, wms_res_as_dict, RESOURCE_CREATE_ACTION)
@@ -222,6 +230,7 @@ def _is_shapefile(res_folder_path):
 
 
 def _publish_layer(geoserver_context, resource, srs_wkt):
+    log.debug('publishing layer for %s' % resource['name'])
     geoserver_url = geoserver_context['geoserver_url']
     geoserver_workspace = geoserver_context['geoserver_workspace']
     geoserver_admin = geoserver_context['geoserver_admin']
@@ -243,6 +252,7 @@ def _publish_layer(geoserver_context, resource, srs_wkt):
     res = urllib2.urlopen(req)
     wms_server = geoserver_url + '/wms'
     wms_layer = geoserver_workspace + ':' + resource_id
+    log.debug('published layer %s' % wms_layer)
     return (wms_server, wms_layer)
 
 
@@ -268,6 +278,7 @@ def _update_resource_metadata(context, resource):
 
 
 def vectorstorer_update(geoserver_cont, cont, data):
+    log.debug('resource update')
     resource = json.loads(data)
     context = json.loads(cont)
     geoserver_context = json.loads(geoserver_cont)
@@ -285,6 +296,7 @@ def vectorstorer_update(geoserver_cont, cont, data):
 
 
 def vectorstorer_delete(geoserver_cont, cont, data):
+    log.debug('resource delete')
     resource = json.loads(data)
     context = json.loads(cont)
     geoserver_context = json.loads(geoserver_cont)
