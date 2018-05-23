@@ -12,6 +12,14 @@ from ckanext.vectorstorer import settings
 from ckanext.vectorstorer import tasks
 from ckanext.publicamundi.model.resource_identify import ResourceIdentify
 
+import logging
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
+
+logging.getLogger('ckan.lib.jobs').setLevel(logging.DEBUG)
+logging.getLogger('pysolr').setLevel(logging.ERROR)
+logging.getLogger('repoze.who').setLevel(logging.ERROR)
+
 def _get_site_url():
     try:
         return h.url_for_static('/', qualified=True)
@@ -67,7 +75,7 @@ def create_vector_storer_task(resource, extra_params = None):
     context = json.dumps(cont)
     geoserver_context = _get_geoserver_context()
     data = json.dumps(resource_dictize(resource, {'model': model}))
-    
+    log.debug('create vectorstore task')
     jobs.enqueue(tasks.vectorstorer_upload, [geoserver_context, context, data])
 
 
@@ -84,6 +92,7 @@ def update_vector_storer_task(resource):
      'db_params': config['ckan.datastore.write_url']})
     geoserver_context = _get_geoserver_context()
     data = json.dumps(resource_dictize(resource, {'model': model}))
+    log.debug('update vectorstore task')
     jobs.enqueue(tasks.vectorstorer_update, [geoserver_context, context, data])
 
 

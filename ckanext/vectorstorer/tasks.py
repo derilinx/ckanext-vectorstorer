@@ -55,7 +55,7 @@ def _identify(resource,user_api_key):
         json_result['layers'] = layers
         return json_result
     else:
-        return u'nvalid'
+        return u'invalid'
     _delete_temp(resource_tmp_folder)
 
 
@@ -258,9 +258,12 @@ def _publish_layer(geoserver_context, resource, srs_wkt):
                             data=data,
                             timeout=10)
         res.raise_for_status()
-    except (requests.HTTPError, msg):
-        log.debug("Exception posting to geoserver: %s" %str(s))
+    except requests.HTTPError as msg:
+        log.debug("Exception posting to geoserver: %s" %str(msg))
         raise
+    except Exception as msg:
+        log.debug("Other Exception posting to geoserver: %s" %str(msg))
+        raise        
     log.debug("sent layer to geoserver")
     wms_server = geoserver_url + '/wms'
     wms_layer = geoserver_workspace + ':' + resource_id
