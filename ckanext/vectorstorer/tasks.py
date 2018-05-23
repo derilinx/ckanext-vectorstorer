@@ -59,6 +59,7 @@ def _identify(resource,user_api_key):
 
 
 def vectorstorer_upload(geoserver_cont, cont, data):
+    log.debug("task: vectorstorer_upload")
     resource = json.loads(data)
     context = json.loads(cont)
     geoserver_context = json.loads(geoserver_cont)
@@ -67,6 +68,7 @@ def vectorstorer_upload(geoserver_cont, cont, data):
 
 
 def _handle_resource(resource, db_conn_params, context, geoserver_context):
+    log.debug("task: _handle_resource")
     user_api_key = context['apikey'].encode('utf8')
     resource_tmp_folder,_file_path = _download_resource(resource,user_api_key)
     gdal_driver, file_path ,prj_exists = _get_gdalDRV_filepath(resource, resource_tmp_folder,_file_path)
@@ -249,7 +251,9 @@ def _publish_layer(geoserver_context, resource, srs_wkt):
      resource_description,
      srs_wkt))
     req.add_header('Authorization', 'Basic ' + (geoserver_admin + ':' + geoserver_password).encode('base64').rstrip())
+    log.debug("sending layer to geoserver: %s "% url)
     res = urllib2.urlopen(req)
+    log.debug("sent layer to geoserver")
     wms_server = geoserver_url + '/wms'
     wms_layer = geoserver_workspace + ':' + resource_id
     log.debug('published layer %s' % wms_layer)
