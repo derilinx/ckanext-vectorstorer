@@ -46,8 +46,8 @@ def identify_resource(resource_obj):
     data = json.dumps(resource)
     job = jobs.enqueue(tasks.identify_resource, [data,user_api_key])
     
-    res_identify = ResourceIdentify(job.id, resource['id'])
-    ckan.model.Session.add(res_identify)
+    #res_identify = ResourceIdentify(job.id, resource['id'], None)
+    #ckan.model.Session.add(res_identify)
     
     
 def _get_geoserver_context():
