@@ -2,6 +2,7 @@ import zipfile
 import os
 import urllib2
 import urllib
+import requests
 import json
 import vector
 import shutil
@@ -244,15 +245,22 @@ def _publish_layer(geoserver_context, resource, srs_wkt):
         resource_name = resource_name.replace(DBTableResource.name_extention, '')
     resource_description = resource['description']
     url = geoserver_url + '/rest/workspaces/' + geoserver_workspace + '/datastores/' + geoserver_ckan_datastore + '/featuretypes'
-    req = urllib2.Request(url)
-    req.add_header('Content-type', 'text/xml')
-    req.add_data('<featureType><name>%s</name><title>%s</title><abstract>%s</abstract><nativeCRS>%s</nativeCRS></featureType>' % (resource_id,
-     resource_name,
-     resource_description,
-     srs_wkt))
-    req.add_header('Authorization', 'Basic ' + (geoserver_admin + ':' + geoserver_password).encode('base64').rstrip())
+    data = '<featureType><name>%s</name><title>%s</title><abstract>%s</abstract><nativeCRS>%s</nativeCRS></featureType>' % (
+        resource_id,
+        resource_name,
+        resource_description,
+        srs_wkt)
     log.debug("sending layer to geoserver: %s "% url)
-    res = urllib2.urlopen(req)
+    try:
+        res = requests.post(url,
+                            headers={'Content-type': 'text/xml'},
+                            auth=(geoserver_admin, geoserver_password),
+                            data=data,
+                            timeout=10)
+        res.raise_for_status()
+    except (requests.HTTPError, msg):
+        log.debug("Exception posting to geoserver: %s" %str(s))
+        raise
     log.debug("sent layer to geoserver")
     wms_server = geoserver_url + '/wms'
     wms_layer = geoserver_workspace + ':' + resource_id
