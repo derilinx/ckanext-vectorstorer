@@ -113,7 +113,7 @@ class Vector:
     def get_geometry_name(self, layer):
         geometry_names = []
         for feat in layer:
-            if not feat:
+            if not feat or not feat.GetGeometryRef():
                 continue
             feat_geom = feat.GetGeometryRef().GetGeometryName()
             if feat_geom not in geometry_names:
@@ -141,6 +141,8 @@ class Vector:
                 return 'GEOMETRY'
         elif len(geometry_names) > 2:
             return 'GEOMETRY'
+        log.debug('No geometry name found, falling back to GEOMETRY')
+        return 'GEOMETRY'
 
     def get_sample_data(self, layer):
         feat_data = {}
@@ -183,7 +185,11 @@ class Vector:
         self._db.commit_and_close()
 
     def needs_conversion_to_multi(self, feat, layer_geom_name):
-        if not feat.GetGeometryRef().GetGeometryName() == layer_geom_name:
+        try:
+            if not feat.GetGeometryRef().GetGeometryName() == layer_geom_name:
+                return True
+            else:
+                return False
+        except AttributeError:
+            log.debug("Feature does not have a Geometry")
             return True
-        else:
-            return False
