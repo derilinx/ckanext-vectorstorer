@@ -13,6 +13,9 @@ XLS = 'XLS'
 SQLITE = 'SQLite'
 GEOPACKAGE = 'GPKG'
 
+import logging
+log=logging.getLogger(__name__)
+
 class Vector:
     _check_for_conversion = False
     default_epsg = 4326
@@ -63,36 +66,49 @@ class Vector:
             return self.default_epsg
 
     def _get_layer_fields(self, layerDefinition):
-        fields = ''
+        fields = []
         for i in range(layerDefinition.GetFieldCount()):
             fname = layerDefinition.GetFieldDefn(i).GetName()
             ftype = layerDefinition.GetFieldDefn(i).GetType()
-            if ftype == 0:
-                fields += ',' + (fname + ' ' + 'integer')
-            elif ftype == 1:
-                fields += ',' + (fname + ' ' + 'integer[]')
-            elif ftype == 2:
-                fields += ',' + (fname + ' ' + 'real')
-            elif ftype == 3:
-                fields += ',' + (fname + ' ' + 'real[]')
-            elif ftype == 4:
-                fields += ',"' + (fname + '" ' + 'varchar')
-            elif ftype == 5:
-                fields += ',"' + (fname + '" ' + 'varchar[]')
-            elif ftype == 6:
-                fields += ',' + (fname + ' ' + 'varchar')
-            elif ftype == 7:
-                fields += ',' + (fname + ' ' + 'varchar[]')
-            elif ftype == 8:
-                fields += ',' + (fname + ' ' + 'bytea')
-            elif ftype == 9:
-                fields += ',' + (fname + ' ' + 'date')
-            elif ftype == 10:
-                fields += ',' + (fname + ' ' + 'time without time zone')
-            elif ftype == 11:
-                fields += ',' + (fname + ' ' + 'timestamp without time zone')
-
-        return fields
+            # if ftype == 0:
+            #     fields += ',' + (fname + ' ' + 'integer')
+            # elif ftype == 1:
+            #     fields += ',' + (fname + ' ' + 'integer[]')
+            # elif ftype == 2:
+            #     fields += ',' + (fname + ' ' + 'real')
+            # elif ftype == 3:
+            #     fields += ',' + (fname + ' ' + 'real[]')
+            # elif ftype == 4:
+            #     fields += ',"' + (fname + '" ' + 'varchar')
+            # elif ftype == 5:
+            #     fields += ',"' + (fname + '" ' + 'varchar[]')
+            # elif ftype == 6:
+            #     fields += ',' + (fname + ' ' + 'varchar')
+            # elif ftype == 7:
+            #     fields += ',' + (fname + ' ' + 'varchar[]')
+            # elif ftype == 8:
+            #     fields += ',' + (fname + ' ' + 'bytea')
+            # elif ftype == 9:
+            #     fields += ',' + (fname + ' ' + 'date')
+            # elif ftype == 10:
+            #     fields += ',' + (fname + ' ' + 'time without time zone')
+            # elif ftype == 11:
+            #     fields += ',' + (fname + ' ' + 'timestamp without time zone')
+            field_map = {0: 'integer',
+                1: 'integer[]',
+                2:'real',
+                3: 'real[]',
+                4: 'varchar',
+                5: 'varchar[]',
+                6: 'varchar',
+                7: 'varchar[]',
+                8: 'bytea',
+                9: 'date',
+                10: 'time without time zone',
+                11: 'timestamp without time zone'}
+            if ftype in field_map:
+                fields.append('''"%s" %s''' %(fname, field_map[ftype]))
+        return ", ".join(fields)
 
     def get_geometry_name(self, layer):
         geometry_names = []
