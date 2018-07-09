@@ -28,7 +28,13 @@ class DB:
         view_name = table_name
         table_name = "%s_tbl" % table_name
 
-        join_target_id = "9d241730-3178-43c4-89b9-099c219251e8"
+        try:
+            from ckanext.landesa_tenure import datastore
+            resource = datastore.get_resource()
+            join_target_id = resource['id']
+        except Exception as msg:
+            log.debug("Error getting the resource id: %s" % msg)
+            raise Exception("Couldn't find the resource in create_table_and_vies")
 
         self.cursor.execute("""CREATE TABLE "%s" (_id serial PRIMARY KEY, %s);""" % (table_name,fin))
         self.cursor.execute("SELECT AddGeometryColumn (%s,'the_geom',%s, %s, %s);",
