@@ -32,11 +32,11 @@ def identify_resource(data,user_api_key):
 
 def _identify(resource,user_api_key):
     json_result = {}
-    
+
     resource_tmp_folder, _file_path = _download_resource(resource,user_api_key)
 
     gdal_driver, file_path,prj_exists = _get_gdalDRV_filepath(resource, resource_tmp_folder ,_file_path)
-    
+
     if gdal_driver:
         json_result['gdal_driver'] = gdal_driver
         _vector = vector.Vector(gdal_driver, file_path, None, None)
@@ -73,7 +73,7 @@ def _handle_resource(resource, db_conn_params, context, geoserver_context):
     user_api_key = context['apikey'].encode('utf8')
     resource_tmp_folder,_file_path = _download_resource(resource,user_api_key)
     gdal_driver, file_path ,prj_exists = _get_gdalDRV_filepath(resource, resource_tmp_folder,_file_path)
-    
+
     if context.has_key('encoding'):
         _encoding = context['encoding']
     else:
@@ -101,7 +101,7 @@ def _get_gdalDRV_filepath(resource, resource_tmp_folder,file_path):
     _gdal_driver = None
     _file_path = os.path.join(resource_tmp_folder,file_path)
     prj_exists = None
-    
+
     if resource_format.lower() in settings.ARCHIVE_FORMATS:
         Archive(_file_path).extractall(resource_tmp_folder)
         is_shp, _file_path, prj_exists = _is_shapefile(resource_tmp_folder)
@@ -123,37 +123,37 @@ def _get_gdalDRV_filepath(resource, resource_tmp_folder,file_path):
         _gdal_driver = vector.CSV
     elif resource_format == 'xls' or resource_format == 'xlsx':
         _gdal_driver = vector.XLS
-   
+
     return _gdal_driver, _file_path ,prj_exists
 
 
 def _download_resource(resource,user_api_key):
     resource_tmp_folder = settings.TMP_FOLDER + str(random.randint(1, 1000)) + resource['id'] + '/'
     file_name= None
-    
+
     os.makedirs(resource_tmp_folder)
     resource_url = urllib2.unquote(resource['url'])
-    
+
     if resource['url_type']:
-	#Handle file uploads here
-	file_name= _get_tmp_file_path(resource_tmp_folder,resource)
-	request = urllib2.Request(resource_url)
-	request.add_header('Authorization', user_api_key)
+        #Handle file uploads here
+        file_name= _get_tmp_file_path(resource_tmp_folder,resource)
+        request = urllib2.Request(resource_url)
+        request.add_header('Authorization', user_api_key)
         resource_download_request = urllib2.urlopen(request)
-	downloaded_resource = open( file_name, 'wb')
-	downloaded_resource.write(resource_download_request.read())
-	downloaded_resource.close()
-	
+        downloaded_resource = open( file_name, 'wb')
+        downloaded_resource.write(resource_download_request.read())
+        downloaded_resource.close()
+
     else :
-	#Handle urls here
-	resource_download_request = urllib2.urlopen(resource_url)
-	_, params = cgi.parse_header(resource_download_request.headers.get('Content-Disposition', ''))
-	filename = params['filename']
-	file_name = filename
-	downloaded_resource = open(resource_tmp_folder + filename, 'wb')
-	downloaded_resource.write(resource_download_request.read())
-	downloaded_resource.close()
- 
+        #Handle urls here
+        resource_download_request = urllib2.urlopen(resource_url)
+        _, params = cgi.parse_header(resource_download_request.headers.get('Content-Disposition', ''))
+        filename = params['filename']
+        file_name = filename
+        downloaded_resource = open(resource_tmp_folder + filename, 'wb')
+        downloaded_resource.write(resource_download_request.read())
+        downloaded_resource.close()
+
     return resource_tmp_folder, file_name
 
 
@@ -263,7 +263,7 @@ def _publish_layer(geoserver_context, resource, srs_wkt):
         raise
     except Exception as msg:
         log.debug("Other Exception posting to geoserver: %s" %str(msg))
-        raise        
+        raise
     log.debug("sent layer to geoserver")
     wms_server = geoserver_url + '/wms'
     wms_layer = geoserver_workspace + ':' + resource_id

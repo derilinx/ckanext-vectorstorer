@@ -127,16 +127,16 @@ class Vector:
         feat_data = {}
         layer.ResetReading()
         for feat in layer:
-	    if not feat:
-		continue
+            if not feat:
+                continue
 
-	    for y in range(feat.GetFieldCount()):
-		layerDefinition = layer.GetLayerDefn()
-		field_name = layerDefinition.GetFieldDefn(y).GetName()
-		feat_data[field_name] = feat.GetField(y)
+            for y in range(feat.GetFieldCount()):
+                layerDefinition = layer.GetLayerDefn()
+                field_name = layerDefinition.GetFieldDefn(y).GetName()
+                feat_data[field_name] = feat.GetField(y)
 
-	    break
-	return feat_data
+            break
+        return feat_data
 
     def write_to_db(self, table_name, layer, srs, layer_geom_name):
         i = 0
