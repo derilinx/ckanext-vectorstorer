@@ -1,6 +1,10 @@
 import psycopg2
 import urlparse
 
+import logging
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
+
 class DB:
     def __init__(self,db_conn_params):
         result = urlparse.urlparse(db_conn_params)
