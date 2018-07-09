@@ -20,9 +20,39 @@ class DB:
             return False
 
     def create_table(self,table_name,fin,geometry,srs,coordinate_dimension):
-        self.cursor.execute("CREATE TABLE \"%s\" (_id serial PRIMARY KEY, %s);"%(table_name,fin))
-        self.cursor.execute("SELECT AddGeometryColumn ('%s','the_geom',%s,'%s',%s);"%(table_name,srs,geometry,coordinate_dimension))
+        self.cursor.execute("CREATE TABLE \"%s\" (_id serial PRIMARY KEY, %s);"%(table_name, fin))
+        self.cursor.execute("SELECT AddGeometryColumn (%s,'the_geom',%s, %s, %s);",
+                            (table_name, srs, geometry, coordinate_dimension))
 
+    def create_table_and_view(self, table_name, fin, geometry, srs, coordinate_dimension):
+        view_name = table_name
+        table_name = "%s_tbl" % table_name
+
+        join_target_id = "9d241730-3178-43c4-89b9-099c219251e8"
+
+        self.cursor.execute("""CREATE TABLE "%s" (_id serial PRIMARY KEY, %s);""" % (table_name,fin))
+        self.cursor.execute("SELECT AddGeometryColumn (%s,'the_geom',%s, %s, %s);",
+                                    (table_name, srs, geometry, coordinate_dimension))
+        self.cursor.execute("""
+            CREATE VIEW "%(view_name)s" as
+              select "%(table_name)s".*,
+                     "%(join_target_id)s".link,
+                     "%(join_target_id)s".link_my
+              from
+                 "%(table_name)s" inner join "%(join_target_id)s" using (parcel_id);
+        """ % {'view_name': view_name,
+               'table_name': table_name,
+               'join_target_id': join_target_id}
+        )
+        self.cursor.execute("""
+            CREATE INDEX "%s_parcel_idx" on "%s"(parcel_id)
+        """ % (table_name, table_name)
+        )
+
+        # UNDONE -- rule for inserts on the table instead of the view
+        # updates/deletes
+
+        return table_name;
 
     def insert_to_table(self,table,fields,geometry_text,convert_to_multi,srs):
         if convert_to_multi:
@@ -30,6 +60,7 @@ class DB:
         else:
             insert=("INSERT INTO \"%s\" VALUES (%s ST_GeomFromText('%s',%s));"%(table,fields,geometry_text,srs)) 
         self.cursor.execute(insert)
+
 
     def create_spatial_index(self,table):
         indexing=("CREATE INDEX \"%s_the_geom_idx\" ON \"%s\" USING GIST(the_geom);"%(table,table)) 

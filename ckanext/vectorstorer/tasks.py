@@ -63,6 +63,8 @@ def _identify(resource,user_api_key):
 
 def vectorstorer_upload(geoserver_cont, cont, data):
     log.debug("task: vectorstorer_upload")
+    log.debug(data)
+    log.debug(cont)
     resource = json.loads(data)
     context = json.loads(cont)
     geoserver_context = json.loads(geoserver_cont)
