@@ -12,7 +12,7 @@ class DB:
         self.cursor=self.conn.cursor()
 
     def check_if_table_exists(self,table_name):
-        self.cursor.execute("SELECT * FROM information_schema.tables WHERE table_name='%s'"%table_name)
+        self.cursor.execute("SELECT * FROM information_schema.tables WHERE table_name=%s", table_name)
         table_exists=bool(self.cursor.rowcount)
         if table_exists:
             return True
