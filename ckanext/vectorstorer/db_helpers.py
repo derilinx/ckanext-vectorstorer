@@ -49,13 +49,14 @@ class DB:
                      "%(join_target_id)s".link,
                      "%(join_target_id)s".link_my
               from
-                 "%(table_name)s" left outer join "%(join_target_id)s" using (parcel_id);
+                 "%(table_name)s" left outer join "%(join_target_id)s"
+                    on ("%(join_target_id)s".parcel_id = "%(table_name)s"."CKAN_ID");
         """ % {'view_name': view_name,
                'table_name': table_name,
                'join_target_id': join_target_id}
         )
         self.cursor.execute("""
-            CREATE INDEX "%s_parcel_idx" on "%s"(parcel_id)
+            CREATE INDEX "%s_parcel_idx" on "%s"("CKAN_ID")
         """ % (table_name, table_name)
         )
 
