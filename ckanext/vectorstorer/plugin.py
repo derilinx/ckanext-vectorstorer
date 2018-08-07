@@ -25,17 +25,17 @@ def supportedFormat(format):
 
 class VectorStorer(SingletonPlugin):
     STATE_DELETED='deleted'
-    
+
     resource_delete_action= None
     resource_update_action=None
-    
+
     implements(IRoutes, inherit=True)
     implements(IConfigurer, inherit=True)
     implements(IConfigurable, inherit=True)
     implements(IResourceUrlChange)
     implements(ITemplateHelpers)
     implements(IDomainObjectModification, inherit=True)
-    
+
     def get_helpers(self):
         return {
             'vectorstore_is_in_vectorstore': isInVectorStore,
@@ -45,7 +45,7 @@ class VectorStorer(SingletonPlugin):
     def configure(self, config):
         ''' Extend the resource_delete action in order to get notification of deleted resources'''
         if self.resource_delete_action is None:
-            
+
             resource_delete = toolkit.get_action('resource_delete')
 
             @logic.side_effect_free
@@ -53,15 +53,15 @@ class VectorStorer(SingletonPlugin):
                 resource=ckan.model.Session.query(model.Resource).get(data_dict['id'])
                 self.notify(resource,model.domain_object.DomainObjectOperation.deleted)
                 res_delete = resource_delete(context, data_dict)
-               
+
                 return res_delete
             logic._actions['resource_delete'] = new_resource_delete
             self.resource_delete_action=new_resource_delete
-        
+
         ''' Extend the resource_update action in order to pass the extra keys to vectorstorer resources
         when they are being updated'''
         if self.resource_update_action is None:
-            
+
             resource_update = toolkit.get_action('resource_update')
 
             @logic.side_effect_free
@@ -77,15 +77,15 @@ class VectorStorer(SingletonPlugin):
                         data_dict['vectorstorer_resource']=resource['vectorstorer_resource']
                         data_dict['parent_resource_id']=resource['parent_resource_id']
                         data_dict['geometry']=resource['geometry']
-                    
+
                     if  not data_dict['url']==resource['url']:
                         abort(400 , _('You cant upload a file to a '+resource['format']+' resource.'))
                 res_update = resource_update(context, data_dict)
-               
+
                 return res_update
             logic._actions['resource_update'] = new_resource_update
             self.resource_update_action=new_resource_update
-    
+
     def before_map(self, map):
         map.connect('style', '/dataset/{id}/resource/{resource_id}/style/{operation}',
             controller='ckanext.vectorstorer.controllers.style:StyleController',
@@ -99,19 +99,18 @@ class VectorStorer(SingletonPlugin):
         map.connect('publish', '/api/vector/publish',
             controller='ckanext.vectorstorer.controllers.vector:VectorController',
             action='publish')
-        
+
         return map
 
     def update_config(self, config):
 
         toolkit.add_public_directory(config, 'public')
         toolkit.add_template_directory(config, 'templates')
-        toolkit.add_resource('public', 'ckanext-vectorstorer')    
+        toolkit.add_resource('public', 'ckanext-vectorstorer')
 
     def notify(self, entity, operation=None):
 
         if isinstance(entity, model.resource.Resource):
-            
             if operation==model.domain_object.DomainObjectOperation.new and entity.format.lower() in settings.SUPPORTED_DATA_FORMATS:
                 #A new vector resource has been created
                 #resource_actions.create_vector_storer_task(entity)
@@ -119,22 +118,20 @@ class VectorStorer(SingletonPlugin):
             #elif operation==model.domain_object.DomainObjectOperation.deleted:
                 ##A vectorstorer resource has been deleted
                 #resource_actions.delete_vector_storer_task(entity.as_dict())
-            
+
             #elif operation is None:
                 ##Resource Url has changed
-                
+
                 #if entity.format.lower() in settings.SUPPORTED_DATA_FORMATS:
                     ##Vector file was updated
-                    
+
                     #resource_actions.update_vector_storer_task(entity)
-                    
+
                 #else :
                     ##Resource File updated but not in supported formats
-                 
+
                     #resource_actions.delete_vector_storer_task(entity.as_dict())
-                    
+
         elif isinstance(entity, model.Package):
-            
             if entity.state==self.STATE_DELETED:
-                
                 resource_actions.pkg_delete_vector_storer_task(entity.as_dict())
