@@ -38,7 +38,7 @@ class DB:
             join_target_id = resource['id']
         except Exception as msg:
             log.debug("Error getting the resource id: %s" % msg)
-            raise Exception("Couldn't find the resource in create_table_and_vies")
+            raise Exception("Couldn't find the resource in create_table_and_view")
 
         self.cursor.execute("""CREATE TABLE "%s" (_id serial PRIMARY KEY, %s);""" % (table_name,fin))
         self.cursor.execute("SELECT AddGeometryColumn (%s,'the_geom',%s, %s, %s);",
