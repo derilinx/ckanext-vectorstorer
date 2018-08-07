@@ -49,7 +49,7 @@ class Vector:
         coordinate_dimension = feat_geom.GetCoordinateDimension()
         layer.ResetReading()
         log.debug(fields)
-        if "parcel_id" in fields:
+        if "CKAN_ID" in fields:
             table_name = self._db.create_table_and_view(table_name,
                                                         fields,
                                                         geom_name,
