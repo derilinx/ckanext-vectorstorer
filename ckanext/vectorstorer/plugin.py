@@ -8,6 +8,10 @@ from ckanext.vectorstorer import resource_actions
 
 from pylons import config
 
+import logging
+log = logging.getLogger(__file__)
+log.setLevel(logging.DEBUG)
+
 def isInVectorStore(package_id, resource_id):
     parent_resource = {}
     parent_resource['package_id'] = package_id
@@ -23,6 +27,60 @@ def isInVectorStore(package_id, resource_id):
 def supportedFormat(format):
     return format.lower() in settings.SUPPORTED_DATA_FORMATS
 
+def _drop_view_and_table(context, data_dict):
+    try:
+        trans = context['connection'].begin()
+
+        if 'filters' not in data_dict:
+            log.debug("dropping view")
+            context['connection'].execute(
+                u'DROP view "{0}" CASCADE'.format(
+                    data_dict['resource_id'])
+            )
+            log.debug("dropping table")
+            context['connection'].execute(
+                u'DROP table "{0}_tbl" CASCADE'.format(
+                    data_dict['resource_id'])
+            )
+    except Exception:
+        trans.rollback
+        raise
+
+def _wrap_backend_delete(self):
+    from ckanext.datastore.backend import postgres as backend_postgres
+    def _datastore_backend_delete(context, data_dict):
+        engine = self._get_write_engine()
+        context['connection'] = engine.connect()
+        backend_postgres._cache_types(context)
+
+        trans = context['connection'].begin()
+        try:
+            # check if table exists
+            if 'filters' not in data_dict:
+                log.debug("dropping resource table")
+                context['connection'].execute(
+                    u'DROP TABLE "{0}" CASCADE'.format(
+                        data_dict['resource_id'])
+                )
+            else:
+                backend_postgres.delete_data(context, data_dict)
+
+            trans.commit()
+            return backend_postgres._unrename_json_field(data_dict)
+        except Exception:
+            trans.rollback()
+            _drop_view_and_table(context, data_dict)
+        finally:
+            context['connection'].close()
+    return _datastore_backend_delete
+
+def horrific_monkey_patch():
+    log.debug('monkeypatching')
+    from ckanext.datastore.backend import DatastoreBackend
+    backend = DatastoreBackend.get_active_backend()
+    backend.delete = _wrap_backend_delete(backend)
+    log.debug('backend: %s' % backend.delete)
+    
 class VectorStorer(SingletonPlugin):
     STATE_DELETED='deleted'
 
@@ -44,6 +102,8 @@ class VectorStorer(SingletonPlugin):
 
     def configure(self, config):
         ''' Extend the resource_delete action in order to get notification of deleted resources'''
+        horrific_monkey_patch()
+
         if self.resource_delete_action is None:
 
             resource_delete = toolkit.get_action('resource_delete')
