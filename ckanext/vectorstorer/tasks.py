@@ -190,7 +190,12 @@ def _handle_vector(_vector, layer_idx, resource, context, geoserver_context):
 
 def _add_db_table_resource(context, resource, geom_name, layer_name):
     log.debug('adding db table resource')
-    db_table_resource = DBTableResource(context['package_id'], layer_name, "Datastore resource derived from \"" + layer_name + "\" in [this resource](" + resource['id'] + "), available in CKAN and GeoServer Store", resource['id'], 'http://_datastore_only_resource', geom_name)
+    db_table_resource = DBTableResource(context['package_id'],
+                                        layer_name,
+                                        "Datastore resource derived from \"" + layer_name + "\" in [this resource](" + resource['id'] + "), available in CKAN and GeoServer Store",
+                                        resource['id'],
+                                        'http://_datastore_only_resource',
+                                        geom_name)
     db_res_as_dict = db_table_resource.get_as_dict()
     created_db_table_resource = _api_resource_action(context, db_res_as_dict, RESOURCE_CREATE_ACTION)
     return created_db_table_resource
@@ -202,11 +207,17 @@ def _add_db_table_resource_view(context, resource):
 
 def _add_wms_resource(context, layer_name, parent_resource, wms_server, wms_layer):
     log.debug('adding wms resource')
-    wms_resource = WMSResource(context['package_id'], layer_name, "WMS publishing of the GeoServer layer \"" + layer_name + "\" stored in [this resource](" + parent_resource['id']  + ")", parent_resource['id'], wms_server, wms_layer)
+    wms_resource = WMSResource(context['package_id'],
+                               layer_name,
+                               "WMS publishing of the GeoServer layer \"" + layer_name + "\" stored in [this resource](" + parent_resource['id']  + ")",
+                               parent_resource['id'],
+                               wms_server,
+                               wms_layer)
     wms_res_as_dict = wms_resource.get_as_dict()
     created_wms_resource = _api_resource_action(context, wms_res_as_dict, RESOURCE_CREATE_ACTION)
     return created_wms_resource
 
+add_wms_resource = _add_wms_resource
 
 def _delete_temp(res_tmp_folder):
     shutil.rmtree(res_tmp_folder)

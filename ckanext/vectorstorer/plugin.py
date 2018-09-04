@@ -1,10 +1,11 @@
-from ckan.plugins import SingletonPlugin, implements, IDomainObjectModification,  IConfigurable, toolkit, IResourceUrlChange, IRoutes, IConfigurer, ITemplateHelpers
+from ckan import plugins
+from ckan.plugins import SingletonPlugin, implements, toolkit
 from ckan import model,logic
 from ckan.lib.base import abort
 from ckan.common import _
 import ckan
-from ckanext.vectorstorer import settings
-from ckanext.vectorstorer import resource_actions
+from . import settings, resource_actions, actions
+
 
 from pylons import config
 
@@ -29,12 +30,13 @@ class VectorStorer(SingletonPlugin):
     resource_delete_action= None
     resource_update_action=None
 
-    implements(IRoutes, inherit=True)
-    implements(IConfigurer, inherit=True)
-    implements(IConfigurable, inherit=True)
-    implements(IResourceUrlChange)
-    implements(ITemplateHelpers)
-    implements(IDomainObjectModification, inherit=True)
+    implements(plugins.IRoutes, inherit=True)
+    implements(plugins.IConfigurer, inherit=True)
+    implements(plugins.IConfigurable, inherit=True)
+    implements(plugins.IResourceUrlChange)
+    implements(plugins.ITemplateHelpers)
+    implements(plugins.IDomainObjectModification, inherit=True)
+    implements(plugins.IActions)
 
     def get_helpers(self):
         return {
@@ -138,3 +140,9 @@ class VectorStorer(SingletonPlugin):
             if entity.state==self.STATE_DELETED:
 
                 resource_actions.pkg_delete_vector_storer_task(entity.as_dict())
+
+    #IActions
+    def get_actions(self):
+
+        return { 'vectorstorer_add_wms': actions.add_wms,
+        }

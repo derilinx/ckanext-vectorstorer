@@ -27,5 +27,9 @@ setup(
         [ckan.plugins]
 
 	vectorstorer=ckanext.vectorstorer.plugin:VectorStorer
+
+        [paste.paster_command]
+        vectorstorer = ckanext.vectorstorer.commands:VectorStorer
+
 	""",
 )
