@@ -38,18 +38,18 @@ def identify_resource(resource_obj):
     user_api_key =  _get_site_user()['apikey']
     res_dict = resource_dictize(resource_obj, {'model': model})
     resource=resource_obj.as_dict()
-    
+
     '''With resource_dictize we get the correct resource url even if dataset is in draft state   '''
-    
+
     resource['url']=res_dict['url']
 
     data = json.dumps(resource)
     job = jobs.enqueue(tasks.identify_resource, [data,user_api_key])
-    
+
     #res_identify = ResourceIdentify(job.id, resource['id'], None)
     #ckan.model.Session.add(res_identify)
-    
-    
+
+
 def _get_geoserver_context():
     geoserver_context = json.dumps({'geoserver_url': config['ckanext-vectorstorer.geoserver_url'],
      'geoserver_workspace': config['ckanext-vectorstorer.geoserver_workspace'],

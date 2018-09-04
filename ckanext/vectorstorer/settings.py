@@ -4,8 +4,8 @@ import sys
 sys.path.append(config.get('ckanext-vectorstorer.gdal_folder', '/usr/lib/python2.7/dist-packages'))
 
 from osgeo import gdal
-	    
-	    
+
+
 from osgeo import ogr, osr
 
 osr.UseExceptions()
@@ -14,7 +14,7 @@ ogr.UseExceptions()
 db_encoding='utf-8'
 TMP_FOLDER='/tmp/vectorstorer/'
 
-SUPPORTED_DATA_FORMATS = [ 
+SUPPORTED_DATA_FORMATS = [
     'zip',
     'rar',
     'tar',
