@@ -144,5 +144,7 @@ class VectorStorer(SingletonPlugin):
     #IActions
     def get_actions(self):
 
-        return { 'vectorstorer_add_wms': actions.add_wms,
+        return {
+            'vectorstorer_add_wms': actions.add_wms,
+            'vectorstorer_add_wms_for_layer': actions.add_wms_for_layer,
         }
