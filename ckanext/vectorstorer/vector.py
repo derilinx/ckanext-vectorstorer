@@ -25,7 +25,7 @@ class Vector:
         driver = ogr.GetDriverByName(gdal_driver)
         self.dataSource = driver.Open(file_path, 0)
         if self.dataSource is None:
-            raise 'Could not open %s' % file_path
+            raise IOError('Could not open %s' % file_path)
 
     def get_layer_count(self):
         return self.dataSource.GetLayerCount()
