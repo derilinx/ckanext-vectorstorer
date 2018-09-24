@@ -1,7 +1,6 @@
 {% extends "package/resource_read.html" %}
 
 {% set res = c.resource %}
-{% set style_controller = 'ckanext.vectorstorer.controllers.style:StyleController' %}
 
 {% block breadcrumb_content %}
 {% if pkg %}
@@ -26,13 +25,13 @@
   <h2 class="module-heading"><i class="icon-medium icon-magic"></i> Styling</h2>
   <ul class="nav nav-simple">
       <li class="nav-item">
-	  <a href="{{ h.url_for(controller=style_controller, action='edit_current_sld',id=c.pkg.id,resource_id=c.resource.id,operation='show') }}" title="{{ _('Edit settings') }}">
+	  <a href="{{ h.url_for('vectorstorer_style', action='show',id=c.pkg.id,resource_id=c.resource.id) }}" title="{{ _('Edit settings') }}">
 	    <span>Edit current Style</span>
           </a>
      
       </li>
       <li class="nav-item">
-	  <a href="{{ h.url_for(controller=style_controller, action='upload_sld',id=c.pkg.id,resource_id=c.resource.id,operation='show') }}" title="{{ _('Edit settings') }}">
+	  <a href="{{ h.url_for('vectorstorer_style', action='upload_sld',id=c.pkg.id,resource_id=c.resource.id,operation='show') }}" title="{{ _('Edit settings') }}">
              <span>Upload a SLD file</span>
           </a>
       </li>
@@ -44,14 +43,13 @@
   </ul>
   
 {% endblock %}
+{% block resource_view %}
 
+{% endblock %}
 {% block primary_content %}
-
-
   {% block sld_actions %} 
  
    {% endblock %}
-  
 {% endblock %}
 
   

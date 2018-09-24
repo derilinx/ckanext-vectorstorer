@@ -23,7 +23,7 @@
     {% endif %}
     
     {% if c.sld_body %}
-    {% snippet 'style/snippets/sld_editor.html', action='edit_current_sld',id=c.pkg.id,resource_id=c.resource.id,sld_body=c.sld_body %}
+    {% snippet 'style/snippets/sld_editor.html', action='edit', id=c.pkg.id, resource_id=c.resource.id, sld_body=c.sld_body %}
     {% endif %}
  
   
