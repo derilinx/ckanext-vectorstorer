@@ -43,17 +43,18 @@ class StyleController(BaseController):
         else:
             abort(404, _('Resource not found'))
 
-    def edit_current_sld(self,id,resource_id,operation):
-        if operation:
-            self._get_context(id,resource_id)
-            if operation.lower()=='show':
-                c.sld_body=self._get_layer_style(resource_id)
-            elif operation.lower()=='submit':
-                sld_body = request.POST['sld_body']
-                self._submit_sld(sld_body)
-            return render('style/edit_sld_form.html')
-        else:
-            abort(404, _('Resource not found'))
+    def show(self, id, resource_id):
+        self._get_context(id, resource_id)
+        c.sld_body=self._get_layer_style(resource_id)
+        return render('style/edit_sld_form.html')
+
+    def edit(self, id, resource_id):
+        self._get_context(id, resource_id)
+        sld_body = request.POST.get('sld_body', '')
+        if not sld_body:
+            abort(409, 'ValidationError, sld_body required in POST')
+        self._submit_sld(sld_body)
+        return render('style/edit_sld_form.html')
 
     def _get_layer_style(self,resource_id):
         geoserver_url=config['ckanext-vectorstorer.geoserver_url']

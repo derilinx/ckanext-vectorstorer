@@ -89,9 +89,8 @@ class VectorStorer(SingletonPlugin):
             self.resource_update_action=new_resource_update
 
     def before_map(self, map):
-        map.connect('style', '/dataset/{id}/resource/{resource_id}/style/{operation}',
-            controller='ckanext.vectorstorer.controllers.style:StyleController',
-            action='style', operation='operation')
+        map.connect('vectorstorer_style', '/dataset/{id}/resource/{resource_id}/style/{action}',
+                    controller='ckanext.vectorstorer.controllers.style:StyleController')
         map.connect('export', '/dataset/{id}/resource/{resource_id}/export/{operation}',
             controller='ckanext.vectorstorer.controllers.export:ExportController',
             action='export',operation='{operation}')

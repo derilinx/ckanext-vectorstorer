@@ -4,7 +4,7 @@
     {{super()}}
 
     {% if res.format=="WMS" and res.vectorstorer_resource %}
-	    <li>{% link_for _('Edit Style'), controller='ckanext.vectorstorer.controllers.style:StyleController', action='edit_current_sld', id=pkg.name, resource_id=res.id,operation='show', class_='btn', icon='magic' %}</li>
+	    <li>{% link_for _('Edit Style'), named_route="vectorstorer_style", action='show', id=pkg.name, resource_id=res.id, class_='btn', icon='magic' %}</li>
     {% endif %}
 
     {% if not res.vectorstorer_resource %}
