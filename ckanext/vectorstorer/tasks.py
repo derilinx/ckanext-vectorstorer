@@ -258,11 +258,12 @@ def _publish_layer(geoserver_context, resource, srs_wkt):
     resource_description = resource['description']
     url = geoserver_url + '/rest/workspaces/' + geoserver_workspace + '/datastores/' + geoserver_ckan_datastore + '/featuretypes'
     data = '<featureType><name>%s</name><title>%s</title><abstract>%s</abstract><nativeCRS>%s</nativeCRS></featureType>' % (
-        resource_id,
+        escape(resource_id),
         escape(resource_name),
         escape(resource_description),
-        srs_wkt)
+        escape(srs_wkt))
     log.debug("sending layer to geoserver: %s "% url)
+    log.debug("sending layer to geoserver: %s "% data)
     try:
         res = requests.post(url,
                             headers={'Content-type': 'text/xml'},
