@@ -73,7 +73,7 @@ class VectorController(BaseController):
 
     def _get_projection(self):
         try:
-            proj_param=request.params.get('projection',u'')
+            proj_param=request.params.get('projection',u'4326')
             _projection=int(proj_param)
             _spatial_ref = osr.SpatialReference()
             _spatial_ref.ImportFromEPSG(_projection)
