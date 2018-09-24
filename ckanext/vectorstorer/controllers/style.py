@@ -15,6 +15,10 @@ NoFileSelected='No XML file was selected.'
 
 redirect = toolkit.redirect_to
 
+import logging
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
+
 class NotVectorStorerWMS(Exception):
     pass
 
@@ -46,6 +50,7 @@ class StyleController(BaseController):
     def show(self, id, resource_id):
         self._get_context(id, resource_id)
         c.sld_body=self._get_layer_style(resource_id)
+        log.debug(c.sld_body)
         return render('style/edit_sld_form.html')
 
     def edit(self, id, resource_id):
