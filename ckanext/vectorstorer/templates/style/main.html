@@ -31,15 +31,11 @@
      
       </li>
       <li class="nav-item">
-	  <a href="{{ h.url_for('vectorstorer_style', action='upload_sld',id=c.pkg.id,resource_id=c.resource.id,operation='show') }}" title="{{ _('Edit settings') }}">
+	  <a href="{{ h.url_for('vectorstorer_style', action='create_form', id=c.pkg.id, resource_id=c.resource.id) }}" title="{{ _('Edit settings') }}">
              <span>Upload a SLD file</span>
           </a>
       </li>
-       <li class="nav-item">
-	  <a href="{{ h.url_for(controller='package', action='resource_read',id=c.pkg.id,resource_id=c.resource.id) }}" >
-             <span>Back to Resource Preview</span>
-          </a>
-      </li>
+
   </ul>
   
 {% endblock %}

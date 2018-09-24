@@ -24,28 +24,23 @@ class NotVectorStorerWMS(Exception):
 
 class StyleController(BaseController):
 
-    def upload_sld(self,id,resource_id,operation):
-        if operation:
-            self._get_context(id,resource_id)
-            if operation.lower()=='show':
-                pass
-            elif operation.lower()=='upload':
-                sld_file_param = request.POST['sld_file']
-                try:
-                    fileExtension = os.path.splitext(sld_file_param.filename)[1]
-                    if fileExtension.lower()==".xml":
-                        sld_file=sld_file_param.file
-                        c.sld_body=sld_file.read()
-                    else:
-                        raise AttributeError
-                except AttributeError:
-                   c.error=NoFileSelected
-            elif operation.lower()=='submit':
-                sld_body = request.POST['sld_body']
-                self._submit_sld(sld_body)
-            return render('style/upload_sld_form.html')
-        else:
-            abort(404, _('Resource not found'))
+    def create_form(self, id, resource_id):
+        self._get_context(id, resource_id)
+        return render('style/upload_sld_form.html')
+    
+    def create(self, id, resource_id):
+        self._get_context(id, resource_id)
+        sld_file_param = request.POST['sld_file']
+        try:
+            fileExtension = os.path.splitext(sld_file_param.filename)[1]
+            if fileExtension.lower() in (".xml", ".sld"):
+                sld_file=sld_file_param.file
+                c.sld_body=sld_file.read()
+            else:
+                raise AttributeError
+        except AttributeError:
+            c.error=NoFileSelected
+        return render('style/upload_sld_form.html')
 
     def show(self, id, resource_id):
         self._get_context(id, resource_id)
