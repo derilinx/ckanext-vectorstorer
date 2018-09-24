@@ -2,11 +2,11 @@
  
 {% block resource_actions_inner %}
     {{super()}}
-    
-    {# {% if res.format=="WMS" and res.vectorstorer_resource %}
-	<li>{% link_for _('Edit Style'), controller='ckanext.vectorstorer.controllers.style:StyleController', action='edit_current_sld', id=pkg.name, resource_id=res.id,operation='show', class_='btn', icon='magic' %}</li>
-    {% endif %} #}
-    
+
+    {% if res.format=="WMS" and res.vectorstorer_resource %}
+	    <li>{% link_for _('Edit Style'), controller='ckanext.vectorstorer.controllers.style:StyleController', action='edit_current_sld', id=pkg.name, resource_id=res.id,operation='show', class_='btn', icon='magic' %}</li>
+    {% endif %}
+
     {% if not res.vectorstorer_resource %}
        {% if h.vectorstore_is_in_vectorstore(c.pkg.id, c.resource_id) %}
             <button class="btn btn-success btn-disabled"><i class="fa fa-globe"></i><i class="fa fa-check"></i> GeoData imported</button>
