@@ -88,7 +88,7 @@ class StyleController(BaseController):
             c.pkg = context['package']
             c.pkg_dict = c.package
             if c.resource.has_key('vectorstorer_resource') and c.resource['format'].lower()=='wms':
-                   c.layer_id=c.resource['parent_resource_id']
+                   c.layer_id=c.resource['wms_layer']
             else:
                 raise NotVectorStorerWMS
         except NotVectorStorerWMS:
