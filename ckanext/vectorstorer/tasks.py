@@ -7,6 +7,7 @@ import json
 import vector
 import shutil
 import random
+from xml.sax.saxutils import escape
 from db_helpers import DB
 from pyunpack import Archive
 from geoserver.catalog import Catalog
@@ -258,8 +259,8 @@ def _publish_layer(geoserver_context, resource, srs_wkt):
     url = geoserver_url + '/rest/workspaces/' + geoserver_workspace + '/datastores/' + geoserver_ckan_datastore + '/featuretypes'
     data = '<featureType><name>%s</name><title>%s</title><abstract>%s</abstract><nativeCRS>%s</nativeCRS></featureType>' % (
         resource_id,
-        resource_name,
-        resource_description,
+        escape(resource_name),
+        escape(resource_description),
         srs_wkt)
     log.debug("sending layer to geoserver: %s "% url)
     try:
