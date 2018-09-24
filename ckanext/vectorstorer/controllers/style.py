@@ -58,8 +58,8 @@ class StyleController(BaseController):
 
     def _get_catalog(self):
         geoserver_url=config['ckanext-vectorstorer.geoserver_url']
-        geoserver_admin = geoserver_context['geoserver_admin']
-        geoserver_password = geoserver_context['geoserver_password']
+        geoserver_admin = config['ckanext-vectorstorer.geoserver_admin']
+        geoserver_password = config['ckanext-vectorstorer.geoserver_password']
         return Catalog(geoserver_url + '/rest', username=geoserver_admin, password=geoserver_password)
 
     def _get_layer_style(self,resource_id):
