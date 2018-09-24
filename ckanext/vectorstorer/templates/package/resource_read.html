@@ -66,46 +66,48 @@
 
 {% block scripts %}    
 {{ super() }}
-  <script>
-    var upload = function() {
-      do {
-        var epsg = prompt("Please enter the EPSG code for the projection of the data (without \"EPSG:\"/numbers only). You can accept the default value for Shapefiles as it will always be ignored and replaced with a projection based on the archive.", "4326");
-      }
-      while (epsg && !parseInt(epsg))
-    
-      if (!epsg) return;
-      $.get("/api/vector/publish?resource_id={{ c.resource.id }}&projection=" + epsg, function() {
-          $('.flash-messages').append('<div class=\"alert fade in alert-info\">Submitted resource {{ c.resource.id }} to Datastore and GeoServer using EPSG:' + epsg + '<a class=\"close\" href=\"#\">&#215;</a></div>');
-        }).fail(function(jqXHR, errorStatus, errorThrown) {
-          $('.flash-messages').append('<div class=\"alert fade in alert-error\">Could not submit resource {{ c.resource.id }} to Datastore and GeoServer. Error: ' + errorStatus + ' <a class=\"close\" href=\"#\">&#215;</a></div>');
-        });     
-}
-   {% if res.format=="DB_TABLE" and res.vectorstorer_resource %}
-   {# We don't have jQuery until later #}
-   {# https://gist.github.com/dciccale/4087856 #}
-   var DOMReady = function(a,b,c){b=document,c='addEventListener';b[c]?b[c]('DOMContentLoaded',a):window.attachEvent('onload',a)}
-   var uparts = [{% for item in h.get_site_protocol_and_host() %} "{{item}}", {% endfor %}];
-  DOMReady(function() {
-$.ajax({
-    type: "GET" ,
-    url: uparts[0] + "://" + uparts[1] + "/geoserver/odm/" + "{{ c.resource.id }}" + "/wms?service=WMS&request=GetCapabilities" ,
-    dataType: "xml" ,
-    success: function(data) {  
-        var wBL = $(data).find('westBoundLongitude')[0].innerHTML;  
-        var eBL = $(data).find('eastBoundLongitude')[0].innerHTML; 
-        var sBL = $(data).find('southBoundLatitude')[0].innerHTML; 
-        var nBL = $(data).find('northBoundLatitude')[0].innerHTML; 
-        var crs = $(data).find('Layer')[1];
-        crs = $(crs).find('CRS');
-        crstext = "";
-        for (var c=0;c<crs.length;c++) {
-                crstext += crs[c].innerHTML + "<br>";
-        }
-  $("#geoserver_bounds").html("<em>West</em>: " + wBL + "<br><em>East</em>: " + eBL + "<br><em>South</em>: " + sBL + "<br><em>North</em>: " + nBL);
-  $("#geoserver_crs").html(crstext);
-}});
-  });
-  {% endif %}
-  </script>
+    <script>
+     var upload = function() {
+         var flprompt ={% if res.format.lower() in ["kml","csv","xls","xlsx","gpx","pdf"] %}1{% else %}0{% endif %};
+         var epsg = '';
+         if (flprompt) {
+             do {
+                 epsg = prompt("Please enter the EPSG code for the projection of the data (without \"EPSG:\"/numbers only). You can accept the default value for Shapefiles as it will always be ignored and replaced with a projection based on the archive.", "4326");
+             }
+             while (epsg && !parseInt(epsg))
+         }
+         $.get("/api/vector/publish?resource_id={{ c.resource.id }}&projection=" + epsg, function() {
+             $('.flash-messages').append('<div class=\"alert fade in alert-info\">Submitted resource {{ c.resource.id }} to Datastore and GeoServer<a class=\"close\" href=\"#\">&#215;</a></div>');
+         }).fail(function(jqXHR, errorStatus, errorThrown) {
+             $('.flash-messages').append('<div class=\"alert fade in alert-error\">Could not submit resource {{ c.resource.id }} to Datastore and GeoServer. Error: ' + errorStatus + ' <a class=\"close\" href=\"#\">&#215;</a></div>');
+         });     
+     }
+         {% if res.format=="DB_TABLE" and res.vectorstorer_resource %}
+         {# We don't have jQuery until later #}
+         {# https://gist.github.com/dciccale/4087856 #}
+         var DOMReady = function(a,b,c){b=document,c='addEventListener';b[c]?b[c]('DOMContentLoaded',a):window.attachEvent('onload',a)}
+         var uparts = [{% for item in h.get_site_protocol_and_host() %} "{{item}}", {% endfor %}];
+         DOMReady(function() {
+             $.ajax({
+                 type: "GET" ,
+                 url: uparts[0] + "://" + uparts[1] + "/geoserver/odm/" + "{{ c.resource.id }}" + "/wms?service=WMS&request=GetCapabilities" ,
+                 dataType: "xml" ,
+                 success: function(data) {  
+                     var wBL = $(data).find('westBoundLongitude')[0].innerHTML;  
+                     var eBL = $(data).find('eastBoundLongitude')[0].innerHTML; 
+                     var sBL = $(data).find('southBoundLatitude')[0].innerHTML; 
+                     var nBL = $(data).find('northBoundLatitude')[0].innerHTML; 
+                     var crs = $(data).find('Layer')[1];
+                     crs = $(crs).find('CRS');
+                     crstext = "";
+                     for (var c=0;c<crs.length;c++) {
+                         crstext += crs[c].innerHTML + "<br>";
+                     }
+                     $("#geoserver_bounds").html("<em>West</em>: " + wBL + "<br><em>East</em>: " + eBL + "<br><em>South</em>: " + sBL + "<br><em>North</em>: " + nBL);
+                     $("#geoserver_crs").html(crstext);
+                 }});
+         });
+         {% endif %}
+    </script>
 {% endblock %}
 
