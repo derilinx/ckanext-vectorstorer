@@ -56,11 +56,17 @@ class StyleController(BaseController):
         self._submit_sld(sld_body)
         return render('style/edit_sld_form.html')
 
-    def _get_layer_style(self,resource_id):
+    def _get_catalog(self):
         geoserver_url=config['ckanext-vectorstorer.geoserver_url']
+        geoserver_admin = geoserver_context['geoserver_admin']
+        geoserver_password = geoserver_context['geoserver_password']
+        return Catalog(geoserver_url + '/rest', username=geoserver_admin, password=geoserver_password)
 
-        cat = Catalog(geoserver_url+"/rest")
+    def _get_layer_style(self,resource_id):
+        cat = self._get_catalog()
         layer = cat.get_layer(c.layer_id)
+        if not layer:
+            abort(404, "Could not retrieve layer")
         default_style=layer._get_default_style()
         xml =  minidom.parseString(default_style.sld_body)
         return xml.toprettyxml()
@@ -90,7 +96,7 @@ class StyleController(BaseController):
     def _submit_sld(self,sld_body):
         try:
             geoserver_url=config['ckanext-vectorstorer.geoserver_url']
-            cat = Catalog(geoserver_url+"/rest")
+            cat = self._get_catalog()
             layer = cat.get_layer(c.layer_id)
             default_style=layer._get_default_style()
             if default_style.name ==c.layer_id:
