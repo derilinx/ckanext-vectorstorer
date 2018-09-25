@@ -72,8 +72,12 @@ def vectorstorer_upload(geoserver_cont, cont, data):
 def _handle_resource(resource, db_conn_params, context, geoserver_context):
     log.debug("task: _handle_resource")
     user_api_key = context['apikey'].encode('utf8')
-    resource_tmp_folder,_file_path = _download_resource(resource,user_api_key)
-    gdal_driver, file_path ,prj_exists = _get_gdalDRV_filepath(resource, resource_tmp_folder,_file_path)
+    resource_tmp_folder, _file_path = _download_resource(resource, user_api_key)
+    log.debug("resource: %s, file_path: %s" % (resource, _file_path))
+    
+    gdal_driver, file_path, prj_exists = _get_gdalDRV_filepath(resource, resource_tmp_folder,_file_path)
+    
+    log.debug("Driver: %s, path: %s , prog_exists: %s" % (gdal_driver, file_path, prj_exists))
 
     if context.has_key('encoding'):
         _encoding = context['encoding']
@@ -84,8 +88,10 @@ def _handle_resource(resource, db_conn_params, context, geoserver_context):
         if len(context['selected_layers']) > 0:
             _selected_layers = context['selected_layers']
     if gdal_driver:
+        log.debug("Parsing vectors")
         _vector = vector.Vector(gdal_driver, file_path, _encoding, db_conn_params)
         layer_count = _vector.get_layer_count()
+        log.debug("Layer Count: %s" % layer_count)
         for layer_idx in range(0, layer_count):
             if _selected_layers:
                 if str(layer_idx) in _selected_layers:
@@ -97,13 +103,15 @@ def _handle_resource(resource, db_conn_params, context, geoserver_context):
 
 
 def _get_gdalDRV_filepath(resource, resource_tmp_folder,file_path):
-
+    log.debug("_get_gdalDrv_filepath")
     resource_format = resource['format'].lower()
     _gdal_driver = None
     _file_path = os.path.join(resource_tmp_folder,file_path)
     prj_exists = None
 
-    if resource_format.lower() in settings.ARCHIVE_FORMATS:
+    log.debug("format: %s" %resource_format)
+    
+    if resource_format == 'shp' or resource_format in settings.ARCHIVE_FORMATS:
         Archive(_file_path).extractall(resource_tmp_folder)
         is_shp, _file_path, prj_exists = _is_shapefile(resource_tmp_folder)
         if is_shp:
