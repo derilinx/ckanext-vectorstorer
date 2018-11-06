@@ -46,6 +46,17 @@ def _drop_view_and_table(context, data_dict):
         trans.rollback
         raise
 
+def _resource_exists(self, id):
+    import sqlalchemy
+    ## the _tbl aliases mess up the datastore backend queries
+    log.debug("vectorstorer resource exists")
+    resources_sql = sqlalchemy.text(
+        u'''SELECT 1 FROM "_table_metadata"
+        WHERE name = :id''')
+    results = self._get_read_engine().execute(resources_sql, id=id)
+    res_exists = results.rowcount > 0
+    return res_exists
+
 def _wrap_backend_delete(self):
     from ckanext.datastore.backend import postgres as backend_postgres
     def _datastore_backend_delete(context, data_dict):
@@ -79,6 +90,7 @@ def horrific_monkey_patch():
     from ckanext.datastore.backend import DatastoreBackend
     backend = DatastoreBackend.get_active_backend()
     backend.delete = _wrap_backend_delete(backend)
+    backend.resource_exists = _resource_exists
     log.debug('backend: %s' % backend.delete)
     
 class VectorStorer(SingletonPlugin):
