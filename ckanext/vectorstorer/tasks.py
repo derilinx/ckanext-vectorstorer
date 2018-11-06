@@ -318,12 +318,13 @@ def vectorstorer_delete(geoserver_cont, cont, data):
     log.debug('resource delete')
     resource = json.loads(data)
     context = json.loads(cont)
+    log.debug(resource)
     geoserver_context = json.loads(geoserver_cont)
     db_conn_params = context['db_params']
     if resource.has_key('format'):
-        if resource['format'] == settings.DB_TABLE_FORMAT:
-            _delete_from_datastore(resource['id'], db_conn_params, context)
-        elif resource['format'] == settings.WMS_FORMAT:
+        #if resource['format'] == settings.DB_TABLE_FORMAT:
+        #    _delete_from_datastore(resource['id'], db_conn_params, context)
+        if resource['format'] == settings.WMS_FORMAT:
             _unpublish_from_geoserver(resource['parent_resource_id'], geoserver_context)
     resource_ids = context['resource_list_to_delete']
     if resource_ids:
@@ -335,18 +336,33 @@ def vectorstorer_delete(geoserver_cont, cont, data):
 
 def _delete_from_datastore(resource_id, db_conn_params, context):
     _db = DB(db_conn_params)
-    _db.drop_table(resource_id)
+    try:
+        log.debug("dropping datastore table")
+        _db.drop_table(resource_id)
+    except Exception as msg:
+        log.debug('Error dropping table, attempting to drop as view: %s' % msg)
+        try:
+            log.debug("dropping datastore view")
+            _db.drop_view(resource_id)
+            log.debug("dropping datastore table")
+            _db.drop_table("%s_tbl" % resource_id)
+        except Exception as msg:
+            log.error("Exception dropping view and table: %s" %msg)
+
     _db.commit_and_close()
 
 
 def _unpublish_from_geoserver(resource_id, geoserver_context):
+    log.debug('unpublish from geoserver: %s' % resource_id)
     geoserver_url = geoserver_context['geoserver_url']
     geoserver_admin = geoserver_context['geoserver_admin']
     geoserver_password = geoserver_context['geoserver_password']
     cat = Catalog(geoserver_url + '/rest', username=geoserver_admin, password=geoserver_password)
     layer = cat.get_layer(resource_id.lower())
+    log.debug("deleting layer")
     cat.delete(layer)
     cat.reload()
+    log.debug("reloading catalog")
 
 
 def _delete_vectorstorer_resources(resource, context):
