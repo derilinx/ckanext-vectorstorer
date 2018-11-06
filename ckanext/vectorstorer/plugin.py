@@ -1,5 +1,6 @@
-from ckan.plugins import SingletonPlugin, implements, IDomainObjectModification,  IConfigurable, toolkit, IResourceUrlChange, IRoutes, IConfigurer, ITemplateHelpers
-from ckan import model,logic
+from ckan import plugins
+from ckan.plugins import toolkit
+from ckan import model, logic
 from ckan.lib.base import abort
 from ckan.common import _
 import ckan
@@ -9,7 +10,7 @@ from ckanext.vectorstorer import resource_actions
 from pylons import config
 
 import logging
-log = logging.getLogger(__file__)
+log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
 def isInVectorStore(package_id, resource_id):
@@ -28,6 +29,7 @@ def supportedFormat(format):
     return format.lower() in settings.SUPPORTED_DATA_FORMATS
 
 def _drop_view_and_table(context, data_dict):
+    log.debug("vectorstorer drop view and table")
     try:
         trans = context['connection'].begin()
 
@@ -42,8 +44,9 @@ def _drop_view_and_table(context, data_dict):
                 u'DROP table "{0}_tbl" CASCADE'.format(
                     data_dict['resource_id'])
             )
-    except Exception:
-        trans.rollback
+    except Exception as msg:
+        log.debug("error dropping table and view: %s"%msg)
+        trans.rollback()
         raise
 
 def _resource_exists(self, id):
@@ -60,6 +63,8 @@ def _resource_exists(self, id):
 def _wrap_backend_delete(self):
     from ckanext.datastore.backend import postgres as backend_postgres
     def _datastore_backend_delete(context, data_dict):
+        log.debug("vectorstorer datastorebackend_delete")
+        log.debug(data_dict)
         engine = self._get_write_engine()
         context['connection'] = engine.connect()
         backend_postgres._cache_types(context)
@@ -78,7 +83,8 @@ def _wrap_backend_delete(self):
 
             trans.commit()
             return backend_postgres._unrename_json_field(data_dict)
-        except Exception:
+        except Exception as msg:
+            log.debug("error dropping table: %s"%msg)
             trans.rollback()
             _drop_view_and_table(context, data_dict)
         finally:
@@ -92,19 +98,20 @@ def horrific_monkey_patch():
     backend.delete = _wrap_backend_delete(backend)
     backend.resource_exists = _resource_exists
     log.debug('backend: %s' % backend.delete)
-    
-class VectorStorer(SingletonPlugin):
+
+class VectorStorer(plugins.SingletonPlugin):
     STATE_DELETED='deleted'
 
     resource_delete_action= None
     resource_update_action=None
 
-    implements(IRoutes, inherit=True)
-    implements(IConfigurer, inherit=True)
-    implements(IConfigurable, inherit=True)
-    implements(IResourceUrlChange)
-    implements(ITemplateHelpers)
-    implements(IDomainObjectModification, inherit=True)
+    plugins.implements(plugins.IRoutes, inherit=True)
+    plugins.implements(plugins.IConfigurer, inherit=True)
+    plugins.implements(plugins.IConfigurable, inherit=True)
+    plugins.implements(plugins.IResourceUrlChange)
+    plugins.implements(plugins.ITemplateHelpers)
+    plugins.implements(plugins.IDomainObjectModification, inherit=True)
+    plugins.implements(plugins.IResourceController, inherit=True)
 
     def get_helpers(self):
         return {
@@ -138,6 +145,7 @@ class VectorStorer(SingletonPlugin):
 
             @logic.side_effect_free
             def new_resource_update(context, data_dict):
+                log.debug("new_resource_update: vectorstorer %s" % (data_dict['id']))
                 resource=ckan.model.Session.query(model.Resource).get(data_dict['id']).as_dict()
                 if resource.has_key('vectorstorer_resource'):
                     if resource['format'].lower()==settings.WMS_FORMAT:
