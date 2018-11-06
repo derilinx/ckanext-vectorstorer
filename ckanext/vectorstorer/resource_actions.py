@@ -100,7 +100,9 @@ def delete_vector_storer_task(resource, pkg_delete = False):
     user = _get_site_user()
     data = None
     resource_list_to_delete = None
-    if (resource['format'] == settings.WMS_FORMAT or resource['format'] == settings.DB_TABLE_FORMAT) and resource.has_key('vectorstorer_resource'):
+    if (resource['format'] == settings.WMS_FORMAT or
+        resource['format'] == settings.DB_TABLE_FORMAT) \
+        and resource.has_key('vectorstorer_resource'):
         data = json.dumps(resource)
         if pkg_delete:
             resource_list_to_delete = _get_child_resources(resource)
