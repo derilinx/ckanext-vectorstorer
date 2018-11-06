@@ -120,22 +120,7 @@ class VectorStorer(plugins.SingletonPlugin):
         }
 
     def configure(self, config):
-        ''' Extend the resource_delete action in order to get notification of deleted resources'''
         horrific_monkey_patch()
-
-        if self.resource_delete_action is None:
-
-            resource_delete = toolkit.get_action('resource_delete')
-
-            @logic.side_effect_free
-            def new_resource_delete(context, data_dict):
-                resource=ckan.model.Session.query(model.Resource).get(data_dict['id'])
-                self.notify(resource,model.domain_object.DomainObjectOperation.deleted)
-                res_delete = resource_delete(context, data_dict)
-
-                return res_delete
-            logic._actions['resource_delete'] = new_resource_delete
-            self.resource_delete_action=new_resource_delete
 
         ''' Extend the resource_update action in order to pass the extra keys to vectorstorer resources
         when they are being updated'''
@@ -188,16 +173,36 @@ class VectorStorer(plugins.SingletonPlugin):
         toolkit.add_template_directory(config, 'templates')
         toolkit.add_resource('public', 'ckanext-vectorstorer')
 
-    def notify(self, entity, operation=None):
+    #IResourceController
+    def before_delete(self, context, resource, resources):
+        log.debug("before resource delete: vectorstorer: %s " % resource['id'])
 
-        if isinstance(entity, model.resource.Resource):
-            if operation==model.domain_object.DomainObjectOperation.new and entity.format.lower() in settings.SUPPORTED_DATA_FORMATS:
-                #A new vector resource has been created
-                #resource_actions.create_vector_storer_task(entity)
-                resource_actions.identify_resource(entity)
-            #elif operation==model.domain_object.DomainObjectOperation.deleted:
-                ##A vectorstorer resource has been deleted
-                #resource_actions.delete_vector_storer_task(entity.as_dict())
+        res = None
+        for r in resources:
+            if r['id'] == resource['id']:
+                res = r
+                break
+        if not res: return
+        self.notify(res, model.domain_object.DomainObjectOperation.deleted)
+
+    def notify(self, entity, operation=None):
+        log.debug("vectorstorer notify: %s, %s" % (entity, operation))
+        if not (type(entity) == type({})):
+            entity = entity.as_dict()
+
+        if 'vectorstorer_resource' in entity \
+           and operation==model.domain_object.DomainObjectOperation.deleted:
+            log.debug("calling delete resource")
+            resource_actions.delete_vector_storer_task(entity)
+
+        if entity.get('format','').lower() in settings.SUPPORTED_DATA_FORMATS \
+           and operation==model.domain_object.DomainObjectOperation.new:
+            log.debug("calling identify resource")
+            resource_actions.identify_resource(entity)
+
+        if 'resources' in entity and entity.get('state', None) == self.STATE_DELETED:
+            log.debug("calling delete package")
+            resource_actions.pkg_delete_vector_storer_task(entity)
 
             #elif operation is None:
                 ##Resource Url has changed
@@ -211,7 +216,3 @@ class VectorStorer(plugins.SingletonPlugin):
                     ##Resource File updated but not in supported formats
 
                     #resource_actions.delete_vector_storer_task(entity.as_dict())
-
-        elif isinstance(entity, model.Package):
-            if entity.state==self.STATE_DELETED:
-                resource_actions.pkg_delete_vector_storer_task(entity.as_dict())
