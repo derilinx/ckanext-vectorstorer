@@ -78,8 +78,15 @@ class DB:
         self.cursor.execute(indexing)
 
     def drop_table(self,table):
-        indexing=("DROP TABLE \"%s\";"%(table)) 
+        indexing=("DROP TABLE \"%s\";"%(table))
         self.cursor.execute(indexing)
+
+    def drop_view(self, view):
+        indexing=("DROP view \"%s\";"%(view))
+        self.cursor.execute(indexing)
+
+    def rollback(self):
+        self.conn.rollback()
 
     def commit_and_close(self):
         self.conn.commit()

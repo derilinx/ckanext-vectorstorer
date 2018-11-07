@@ -322,8 +322,8 @@ def vectorstorer_delete(geoserver_cont, cont, data):
     geoserver_context = json.loads(geoserver_cont)
     db_conn_params = context['db_params']
     if resource.has_key('format'):
-        #if resource['format'] == settings.DB_TABLE_FORMAT:
-        #    _delete_from_datastore(resource['id'], db_conn_params, context)
+        if resource['format'] == settings.DB_TABLE_FORMAT:
+            _delete_from_datastore(resource['id'], db_conn_params, context)
         if resource['format'] == settings.WMS_FORMAT:
             _unpublish_from_geoserver(resource['parent_resource_id'], geoserver_context)
     resource_ids = context['resource_list_to_delete']
@@ -341,6 +341,7 @@ def _delete_from_datastore(resource_id, db_conn_params, context):
         _db.drop_table(resource_id)
     except Exception as msg:
         log.debug('Error dropping table, attempting to drop as view: %s' % msg)
+        _db.rollback()
         try:
             log.debug("dropping datastore view")
             _db.drop_view(resource_id)
@@ -360,9 +361,13 @@ def _unpublish_from_geoserver(resource_id, geoserver_context):
     cat = Catalog(geoserver_url + '/rest', username=geoserver_admin, password=geoserver_password)
     layer = cat.get_layer(resource_id.lower())
     log.debug("deleting layer")
-    cat.delete(layer)
-    cat.reload()
-    log.debug("reloading catalog")
+    try:
+        cat.delete(layer)
+        cat.reload()
+        log.debug("reloading catalog")
+    except Exception as msg:
+        # quash this error, as it's possible that the layer is already deleted.
+        log.error("Error deleting layer %s: %s" % (resource_id, msg))
 
 
 def _delete_vectorstorer_resources(resource, context):

@@ -44,21 +44,24 @@ def _drop_view_and_table(context, data_dict):
                 u'DROP table "{0}_tbl" CASCADE'.format(
                     data_dict['resource_id'])
             )
+            trans.commit()
     except Exception as msg:
         log.debug("error dropping table and view: %s"%msg)
         trans.rollback()
         raise
 
-def _resource_exists(self, id):
+def _wrap_resource_exists(self):
     import sqlalchemy
-    ## the _tbl aliases mess up the datastore backend queries
-    log.debug("vectorstorer resource exists")
-    resources_sql = sqlalchemy.text(
-        u'''SELECT 1 FROM "_table_metadata"
-        WHERE name = :id''')
-    results = self._get_read_engine().execute(resources_sql, id=id)
-    res_exists = results.rowcount > 0
-    return res_exists
+    def _resource_exists(id):
+        ## the _tbl aliases mess up the datastore backend queries
+        log.debug("vectorstorer resource exists")
+        resources_sql = sqlalchemy.text(
+            u'''SELECT 1 FROM "_table_metadata"
+            WHERE name = :id''')
+        results = self._get_read_engine().execute(resources_sql, id=id)
+        res_exists = results.rowcount > 0
+        return res_exists
+    return _resource_exists
 
 def _wrap_backend_delete(self):
     from ckanext.datastore.backend import postgres as backend_postgres
@@ -72,6 +75,12 @@ def _wrap_backend_delete(self):
         trans = context['connection'].begin()
         try:
             # check if table exists
+            results = context['connection'].execute('''
+                SELECT 1 from "_table_metadata"
+                WHERE name = %s ''', data_dict['resource_id'])
+            if results.rowcount == 0:
+                # bail.
+                return backend_postgres._unrename_json_field(data_dict)
             if 'filters' not in data_dict:
                 log.debug("dropping resource table")
                 context['connection'].execute(
@@ -87,6 +96,7 @@ def _wrap_backend_delete(self):
             log.debug("error dropping table: %s"%msg)
             trans.rollback()
             _drop_view_and_table(context, data_dict)
+            return backend_postgres._unrename_json_field(data_dict)
         finally:
             context['connection'].close()
     return _datastore_backend_delete
@@ -96,7 +106,7 @@ def horrific_monkey_patch():
     from ckanext.datastore.backend import DatastoreBackend
     backend = DatastoreBackend.get_active_backend()
     backend.delete = _wrap_backend_delete(backend)
-    backend.resource_exists = _resource_exists
+    backend.resource_exists = _wrap_resource_exists(backend)
     log.debug('backend: %s' % backend.delete)
 
 class VectorStorer(plugins.SingletonPlugin):
