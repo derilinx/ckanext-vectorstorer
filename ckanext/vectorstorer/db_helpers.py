@@ -28,17 +28,29 @@ class DB:
         self.cursor.execute("SELECT AddGeometryColumn (%s,'the_geom',%s, %s, %s);",
                             (table_name, srs, geometry, coordinate_dimension))
 
+    def join_target_id(self):
+        try:
+            from ckanext.landesa_tenure import datastore
+            resource = datastore.get_resource()
+            return resource['id']
+        except Exception as msg:
+            log.debug("Error getting the resource id: %s" % msg)
+            raise Exception("Couldn't find the resource in join_target_id")
+
+    def ckan_mapping_id(self):
+        try:
+            from ckanext.landesa_tenure import datastore
+            resource = datastore.get_mapping_resource()
+            return resource['id']
+        except Exception as msg:
+            log.debug("Error getting the resource id: %s" % msg)
+            raise Exception("Couldn't find the resource in ckan_mapping_id")
+
     def create_table_and_view(self, table_name, fin, geometry, srs, coordinate_dimension):
         view_name = table_name
         table_name = "%s_tbl" % table_name
 
-        try:
-            from ckanext.landesa_tenure import datastore
-            resource = datastore.get_resource()
-            join_target_id = resource['id']
-        except Exception as msg:
-            log.debug("Error getting the resource id: %s" % msg)
-            raise Exception("Couldn't find the resource in create_table_and_view")
+        join_target_id = self.join_target_id()
 
         self.cursor.execute("""CREATE TABLE "%s" (_id serial PRIMARY KEY, %s);""" % (table_name,fin))
         self.cursor.execute("SELECT AddGeometryColumn (%s,'the_geom',%s, %s, %s);",
@@ -72,6 +84,11 @@ class DB:
             insert=("INSERT INTO \"%s\" VALUES (%s ST_GeomFromText('%s',%s));"%(table,fields,geometry_text,srs)) 
         self.cursor.execute(insert)
 
+    def create_ckan_mapping(self, table_name):
+        resource_id = self.ckan_mapping_id()
+        sql = """insert into "%s" (package_id, parcel_id) select '%s', "CKAN_ID" from "%s" """ % (
+            resource_id, table_name.replace("_tbl", ''), table_name)
+        self.cursor.execute(sql)
 
     def create_spatial_index(self,table):
         indexing=("CREATE INDEX \"%s_the_geom_idx\" ON \"%s\" USING GIST(the_geom);"%(table,table)) 
@@ -84,6 +101,9 @@ class DB:
     def drop_view(self, view):
         indexing=("DROP view \"%s\";"%(view))
         self.cursor.execute(indexing)
+        resource_id = self.ckan_mapping_id()
+        sql = """ delete from "%s" where package_id='%s' """ % (resource_id, view)
+        self.cursor.execute(sql)
 
     def rollback(self):
         self.conn.rollback()

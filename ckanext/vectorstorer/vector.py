@@ -169,6 +169,8 @@ class Vector:
                 convert_to_multi = self.needs_conversion_to_multi(feat, layer_geom_name)
             self._db.insert_to_table(table_name, feature_fields, feat.GetGeometryRef(), convert_to_multi, srs)
 
+        if '_tbl' in table_name:
+            self._db.create_ckan_mapping(table_name)
         self._db.create_spatial_index(table_name)
         self._db.commit_and_close()
 
