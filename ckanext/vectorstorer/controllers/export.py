@@ -1,7 +1,7 @@
 import os
 import zipfile
 import uuid
-from pylons import config, Response
+from ckan.common import config
 from ckan.lib.base import BaseController, c, request, \
     response, session, render, config, abort
 

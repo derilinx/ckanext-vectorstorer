@@ -7,7 +7,7 @@ from ckan.lib.base import abort
 from ckan.common import _
 import json
 import ckan
-from pylons import config
+from ckan.common import config
 from ckanext.vectorstorer import settings
 from ckanext.vectorstorer import tasks
 from ckanext.publicamundi.model.resource_identify import ResourceIdentify

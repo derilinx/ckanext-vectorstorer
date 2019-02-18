@@ -1,6 +1,6 @@
 import os
 from xml.dom import minidom
-from pylons import config
+from ckan.common import config
 from geoserver.catalog import Catalog
 from ckan.lib.base import BaseController, c, request, \
                           response, session, render, config, abort

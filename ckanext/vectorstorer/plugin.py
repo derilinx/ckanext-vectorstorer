@@ -7,7 +7,7 @@ import ckan
 from . import settings, resource_actions, actions
 
 
-from pylons import config
+from ckan.common import config
 
 def isInVectorStore(package_id, resource_id):
     parent_resource = {}
