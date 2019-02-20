@@ -94,16 +94,22 @@ class StyleController(BaseController):
             abort(401, _('Unauthorized to read resource %s') % id)
 
     def _submit_sld(self,sld_body):
+        log.debug('_submit_sld: submitting sld for %s' % c.layer_id)
         try:
             geoserver_url=config['ckanext-vectorstorer.geoserver_url']
             cat = self._get_catalog()
             layer = cat.get_layer(c.layer_id)
+            log.debug('checking default style')
             default_style=layer._get_default_style()
-            if default_style.name ==c.layer_id:
+            log.debug('default style: %s' % default_style)
+            if default_style.name == c.layer_id:
+                log.debug('is default style, updating default style')
                 cat.create_style(default_style.name, sld_body, overwrite=True)
             else:
+                log.debug('creating a style for layer')
                 cat.create_style(c.layer_id, sld_body, overwrite=True)
                 layer._set_default_style(c.layer_id)
+                log.debug('saving layer')
                 cat.save(layer)
 
             c.success=True
