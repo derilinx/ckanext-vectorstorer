@@ -237,15 +237,15 @@ def _is_shapefile(res_folder_path):
     shx_exists = False
     dbf_exists = False
     prj_exists = False
-    for file in os.listdir(res_folder_path):
-        if file.lower().endswith('.shp'):
-            shapefile_path = res_folder_path + file
+    for f in os.listdir(res_folder_path):
+        lower, ext = os.path.splitext(f.lower())
+        if ext == '.shp':
+            shapefile_path = res_folder_path + f
             shp_exists = True
-        elif file.lower().endswith('.shx'):
+        elif ext == '.shx':
             shx_exists = True
-        elif file.lower().endswith('.dbf'):
+        elif ext == '.dbf':
             dbf_exists = True
-
     if shp_exists and shx_exists and dbf_exists:
         return (True, shapefile_path, prj_exists)
     else:
