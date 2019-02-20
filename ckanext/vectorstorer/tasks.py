@@ -77,7 +77,7 @@ def _handle_resource(resource, db_conn_params, context, geoserver_context):
     
     gdal_driver, file_path, prj_exists = _get_gdalDRV_filepath(resource, resource_tmp_folder,_file_path)
     
-    log.debug("Driver: %s, path: %s , prog_exists: %s" % (gdal_driver, file_path, prj_exists))
+    log.debug("Driver: %s, path: %s , proj_exists: %s" % (gdal_driver, file_path, prj_exists))
 
     if context.has_key('encoding'):
         _encoding = context['encoding']
@@ -240,12 +240,15 @@ def _is_shapefile(res_folder_path):
     for f in os.listdir(res_folder_path):
         lower, ext = os.path.splitext(f.lower())
         if ext == '.shp':
-            shapefile_path = res_folder_path + f
+            shapefile_path = os.path.join(res_folder_path, f)
             shp_exists = True
         elif ext == '.shx':
             shx_exists = True
         elif ext == '.dbf':
             dbf_exists = True
+        elif ext == '.prj':
+            prj_exists = True
+
     if shp_exists and shx_exists and dbf_exists:
         return (True, shapefile_path, prj_exists)
     else:
