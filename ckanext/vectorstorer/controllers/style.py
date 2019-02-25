@@ -65,6 +65,7 @@ class StyleController(BaseController):
     def _get_layer_style(self,resource_id):
         cat = self._get_catalog()
         layer = cat.get_layer(c.layer_id)
+        log.debug(layer)
         if not layer:
             abort(404, "Could not retrieve layer")
         default_style=layer._get_default_style()
@@ -99,16 +100,23 @@ class StyleController(BaseController):
             geoserver_url=config['ckanext-vectorstorer.geoserver_url']
             cat = self._get_catalog()
             layer = cat.get_layer(c.layer_id)
-            log.debug('checking default style')
+            try:
+                workspace, layer_name = c.layer_id.split(':')
+            except:
+                layer_name = c.layer_id
+                workspace = None
+            log.debug('checking default style for: %s' % layer_name)
             default_style=layer._get_default_style()
             log.debug('default style: %s' % default_style)
-            if default_style.name == c.layer_id:
+            log.debug('default style name: %s' % default_style.name)
+            if default_style.name == layer_name:
                 log.debug('is default style, updating default style')
-                cat.create_style(default_style.name, sld_body, overwrite=True)
+                cat.create_style(default_style.name, sld_body, overwrite=True, workspace=workspace)
             else:
                 log.debug('creating a style for layer')
-                cat.create_style(c.layer_id, sld_body, overwrite=True)
-                layer._set_default_style(c.layer_id)
+                cat.create_style(layer_name, sld_body, overwrite=True, workspace=workspace)
+                log.debug('setting the default style')
+                layer._set_default_style(layer_name)
                 log.debug('saving layer')
                 cat.save(layer)
 
