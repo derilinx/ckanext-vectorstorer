@@ -12,6 +12,7 @@ class VectorStorer(CkanCommand):
     """
 
     """
+    paster --plugin=ckanext-vectorstorer vectorstorer add_wms
     1  paster --plugin=ckanext-vectorstorer vectorstorer add_wms_for_layer post-office-2018 "ODCambodia:Cambodia_post_office"
     2  paster --plugin=ckanext-vectorstorer vectorstorer add_wms_for_layer post-office-2018 "ODCambodia:Cambodia_post_office_kh"
 """
@@ -56,7 +57,7 @@ class VectorStorer(CkanCommand):
             for res in pkg['resources']:
                 print res['format'], res['url']
                 if res['format'] in ('KML', 'SHP') and 'geoserver' in res['url']:
-                    print "Adding WMS for %s" % res['id']
+                    print "Adding WMS for %s %s" % (pkg['name'], res['id'])
                     print toolkit.get_action('vectorstorer_add_wms')(context,{'id':res['id']})
                     break
 
