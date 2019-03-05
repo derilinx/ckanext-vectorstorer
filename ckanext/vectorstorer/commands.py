@@ -36,7 +36,8 @@ class VectorStorer(CkanCommand):
 
 
     def add_wms(self, *args):
-
+        #geoserver_url = toolkit.config['ckanext-vectorstorer.geoserver_url']
+        geoserver_url = '/geoserver'
         user = toolkit.get_action('get_site_user')({'ignore_auth': True,
                                                     'defer_commit': True}, {})
 
@@ -48,17 +49,18 @@ class VectorStorer(CkanCommand):
             pkg_dict = dict([(p['id'], p) for p in packages])
 
         for pkg in pkg_dict.values():
-            print "%s, %s resources" %(pkg['name'], len(pkg['resources']))
+            print("%s, %s resources" %(pkg['name'], len(pkg['resources'])))
 
             if any(res['format'] =='WMS' for res in pkg['resources']):
                 print("found wms, continuing")
                 continue
 
             for res in pkg['resources']:
-                print res['format'], res['url']
-                if res['format'] in ('KML', 'SHP') and 'geoserver' in res['url']:
-                    print "Adding WMS for %s %s" % (pkg['name'], res['id'])
-                    print toolkit.get_action('vectorstorer_add_wms')(context,{'id':res['id']})
+                #print res['format'], res['url']
+                if res['format'] in ('KML', 'SHP') and geoserver_url in res['url']:
+                    print("Adding WMS for %s %s" % (pkg['name'], res['id']))
+                    new_resource = toolkit.get_action('vectorstorer_add_wms')(context,{'id':res['id']})
+                    print("Added new resource: %s" % new_resource['name'])
                     break
 
     def add_wms_for_layer(self, *args):
@@ -69,9 +71,10 @@ class VectorStorer(CkanCommand):
         package = toolkit.get_action('package_show')(context, {'id':args[0]})
 
         if not package:
-            print "Package not found"
+            print("Package not found")
             return 2
 
-        print toolkit.get_action('vectorstorer_add_wms_for_layer')(context,
+        new_resource = toolkit.get_action('vectorstorer_add_wms_for_layer')(context,
                                                                    {'package_id': args[0],
                                                                     'layer': args[1]})
+        print(new_resource)

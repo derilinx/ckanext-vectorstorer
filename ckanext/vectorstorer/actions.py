@@ -4,6 +4,8 @@ from .tasks import identify_resource, add_wms_resource
 
 import urlparse
 
+import logging
+log = logging.getLogger(__name__)
 
 # update resource set url= replace(url, 'https://data2.odc.staging.derilinx.com', 'http://odt.localhost') where url like 'https://data2.odc.staging.derilinx.com/geoserver%'
 # update resource set url= replace(url, 'https://data2.odc.staging.derilinx.com', 'https://data2.odt.staging.derilinx.com') where url like 'https://data2.odc.staging.derilinx.com/geoserver%'
@@ -16,11 +18,20 @@ def add_wms(context, data_dict):
     :param id: resource id to create a WMS for
     :returns: wms resource dict
     """
-
+    
+    geoserver_url = '/geoserver'
+    
     res = toolkit.get_action('resource_show')(context, {'id': data_dict['id']})
-
-    if not res['format'] in ('KML', 'SHP') or not 'geoserver' in res['url']: return {}
-    if not toolkit.config['ckanext-vectorstorer.geoserver_url'] in res['url']: return {}
+    if not res['format'] in ('KML', 'SHP') or not 'geoserver' in res['url']:
+        log.warning('Issue: resource %s not in kml or shp format: %s' % (
+            res['name'], res['format'] ))
+        return {}
+    if not geoserver_url in res['url']:
+        log.warning('Issue: resource %s geoserver_url (%s) not in url: %s' % (
+            res['name'],
+            geoserver_url,
+            res['url'] ))
+        return {}
 
 
     res_url = urlparse.urlparse(res['url'])
@@ -45,7 +56,7 @@ def add_wms(context, data_dict):
     try:
         return add_wms_resource(geo_context, name, res, wms_server, wms_layer)
     except Exception as msg:
-        print "Exception creating resource: %s, continuing"% msg
+        log.error("Exception creating resource %s: %s, continuing"% (name, msg))
 
 
 def add_wms_for_layer(context, data_dict):
