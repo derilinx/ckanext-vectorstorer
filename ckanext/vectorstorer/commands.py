@@ -1,6 +1,9 @@
 from ckan.lib.cli import CkanCommand
 from ckan.plugins import toolkit
 
+import sys
+import csv
+
 class VectorStorer(CkanCommand):
 
     """
@@ -9,6 +12,9 @@ class VectorStorer(CkanCommand):
            - Creates wms resources for existing geoserver shp/kml resources
         paster vectorstorer add_wms_for_layer package_id layer
            - Creates wms resources for existing geoserver layer
+        paster vectorstorer add_wms_for_csv /path/to/csv
+           - Creates wms resources for the csv, each line is package_id, layer
+ 
     """
 
     """
@@ -32,6 +38,8 @@ class VectorStorer(CkanCommand):
             self.add_wms(*self.args[1:])
         elif cmd == "add_wms_for_layer":
             self.add_wms_for_layer(*self.args[1:])
+        elif cmd == "add_wms_from_csv":
+            self.add_wms_from_csv(*self.args[1:])
 
 
 
@@ -68,7 +76,12 @@ class VectorStorer(CkanCommand):
                                                     'defer_commit': True}, {})
 
         context = {'userobj': user, 'user': user['name']}
-        package = toolkit.get_action('package_show')(context, {'id':args[0]})
+        try:
+            package = toolkit.get_action('package_show')(context, {'id':args[0]})
+        except toolkit.NotFound:
+            print "Package %s not found" % args[0]
+            raise
+            
 
         if not package:
             print("Package not found")
@@ -78,3 +91,29 @@ class VectorStorer(CkanCommand):
                                                                    {'package_id': args[0],
                                                                     'layer': args[1]})
         print(new_resource)
+
+
+    def add_wms_from_csv(self, *args):
+        try:
+            path = args[0]
+            with open(path, 'r') as f:
+                reader = csv.reader(f)
+
+                for row in reader:
+                    try:
+                        print("Adding wms:  %s -- %s" % (row[0], row[1]))
+                        #import pdb; pdb.set_trace()
+                        self.add_wms_for_layer(row[1].strip(), row[0].strip())
+                    except Exception as msg:
+                        print("Error adding layer: %s" % msg)
+
+        except Exception as msg:
+            print("Couldn't read input file: %s" % msg)
+            sys.exit(4)
+
+                
+
+        
+                
+        
+    
