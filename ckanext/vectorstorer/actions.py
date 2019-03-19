@@ -1,8 +1,10 @@
 from ckan.plugins import toolkit
 
 from .tasks import identify_resource, add_wms_resource
+from . import wms
 
 import urlparse
+import requests
 
 import logging
 log = logging.getLogger(__name__)
@@ -88,3 +90,27 @@ def add_wms_for_layer(context, data_dict):
                                 wms_server, wms_layer)
     except Exception as msg:
         print "Exception creating resource: %s, continuing"% msg
+
+
+
+def spatial_metadata_for_resource(context, data_dict):
+    """
+    Gets the WMS spatial metadata for the given WMS layer in in the geoserver
+    
+    data dict params:
+    :param resource_id: The wms resource id -- must have a wms_layer field
+    """
+
+    resource = toolkit.get_action('resource_show')(context, {'id': data_dict['resource_id']})
+
+    layer_url = resource.get('layer_url', None)
+    if not layer_url:
+        raise Exception("Could not find layer url")
+
+    try:
+        return wms.geo_metadata(wms.wms_from_url(layer_url))
+    except Exception as msg:
+        log.error("Exception getting layer metadata: %s" % msg)
+        raise
+
+

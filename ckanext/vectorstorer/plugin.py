@@ -146,4 +146,5 @@ class VectorStorer(SingletonPlugin):
         return {
             'vectorstorer_add_wms': actions.add_wms,
             'vectorstorer_add_wms_for_layer': actions.add_wms_for_layer,
+            'vectorstorer_spatial_metadata_for_resource': actions.spatial_metadata_for_resource,
         }
