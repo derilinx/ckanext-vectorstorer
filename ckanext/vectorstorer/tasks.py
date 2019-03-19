@@ -296,24 +296,23 @@ def _publish_layer(geoserver_context, resource, srs_wkt):
 
 
 def _api_resource_action(context, resource, action):
-    api_key = context['apikey'].encode('utf8')
-    site_url = context['site_url']
-    data_string = urllib.quote(json.dumps(resource))
-    request = urllib2.Request(site_url + 'api/action/' + action)
-    request.add_header('Authorization', api_key)
-    response = urllib2.urlopen(request, data_string)
-    created_resource = json.loads(response.read())['result']
-    return created_resource
+    api_key = context['apikey']
+    url = "%sapi/action/%s" % (context['site_url'], action)
+    log.debug("adding resource")
+    log.debug(json.dumps(resource))
+    
+    headers = {'Authorization': api_key,
+               'Content-type': 'application/json' }
+
+    response = requests.post(url, headers=headers, data=json.dumps(resource))
+    response.raise_for_status()
+
+    return response.json()['result']
 
 
 def _update_resource_metadata(context, resource):
-    api_key = context['apikey'].encode('utf8')
-    site_url = context['site_url']
     resource['vectorstorer_resource'] = True
-    data_string = urllib.quote(json.dumps(resource))
-    request = urllib2.Request(site_url + 'api/action/resource_update')
-    request.add_header('Authorization', api_key)
-    urllib2.urlopen(request, data_string)
+    return _api_resource_action(context, resource, 'resource_update')
 
 
 def vectorstorer_update(geoserver_cont, cont, data):
@@ -328,7 +327,7 @@ def vectorstorer_update(geoserver_cont, cont, data):
             res = {'id': res_id}
             try:
                 _api_resource_action(context, res, RESOURCE_DELETE_ACTION)
-            except urllib2.HTTPError as e:
+            except requests.exceptions.HTTPError as e:
                 print e.reason
 
     _handle_resource(resource, db_conn_params, context, geoserver_context)
@@ -371,11 +370,9 @@ def _unpublish_from_geoserver(resource_id, geoserver_context):
 
 def _delete_vectorstorer_resources(resource, context):
     resources_ids_to_delete = context['vector_storer_resources_ids']
-    api_key = context['apikey'].encode('utf8')
-    site_url = context['site_url']
+
     for res_id in resources_ids_to_delete:
         resource = {'id': res_id}
-        data_string = urllib.quote(json.dumps(resource))
-        request = urllib2.Request(site_url + 'api/action/resource_delete')
-        request.add_header('Authorization', api_key)
-        urllib2.urlopen(request, data_string)
+        _api_resource_action(context, resource, 'resource_delete')
+
+
