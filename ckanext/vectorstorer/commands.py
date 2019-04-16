@@ -125,10 +125,9 @@ class VectorStorer(CkanCommand):
             datasets = json.load(f)
 
         package_create = toolkit.get_action('package_create')
+        package_show = toolkit.get_action('package_show')
 
         context = toolkit.get_action('get_site_user')({},{})
-        # the orgs are distinct on the first 6 chars, but they are spelled differently in the CSV
-        # than in the database.
         orgs = dict([(d['display_name'].lower(), d)
                      for d in toolkit.get_action('organization_list')(context, {'all_fields': True})])
 
@@ -138,6 +137,8 @@ class VectorStorer(CkanCommand):
             context = toolkit.get_action('get_site_user')({},{})
 
             org_name = dataset['org_name'].lower()
+            if org_name == 'none':
+                org_name = "Open Development Mekong".lower()
             if not org_name in orgs:
                 print "Exception finding org: %s for dataset %s, continuing." %(org_name, dataset['title'])
                 print "\n".join(orgs.keys())
@@ -148,14 +149,38 @@ class VectorStorer(CkanCommand):
             dataset['owner_org'] = orgs[org_name]['id']
 
             try:
-                pkg = package_create(context, dataset)
-                model.Session.commit()
-                for r in resources:
-                    print("Adding wms:  %s -- %s" % (r[0], r[1]))
-                    self.add_wms_for_layer(r[0].strip(), r[1].strip())
-            except Exception as msg:
-                print "Exception creating package %s: %s" % (dataset['name'], msg)
-                import inspect; print inspect.trace()
+                pkg = package_show(context, {'id': dataset['name']})
+            except:
+                try:
+                    pkg = package_create(context, dataset)
+                    model.Session.commit()
+                    print "Created package id: %s for %s" % (pkg['id'], pkg['title'])
+                except Exception as msg:
+                    print "Exception creating package %s: %s" % (dataset['name'], msg)
+                    continue
+
+            if not pkg:
                 continue
 
-            print "Created package id: %s for %s" % (pkg['id'], pkg['title'])
+            existing_layers = [r['wms_layer'] for r in pkg['resources'] if r.get('wms_layer')]
+
+            # clear existing layers ...  Dangerous, but useful
+            #if existing_layers:
+            #    context = toolkit.get_action('get_site_user')({},{})
+            #    toolkit.get_action('package_patch')(context, {'id': pkg['id'],
+            #                                                  'resources': []})
+
+            for r in resources:
+                pkg_name = r[0].strip()
+                layer = r[1].strip()
+                #print layer, existing_layers, layer in existing_layers
+                #raise Exception()
+                if (layer in existing_layers):
+                    continue
+                print("Adding wms:  %s -- %s" % (pkg_name, layer))
+                try:
+                    self.add_wms_for_layer(pkg_name, layer)
+                except Exception as msg:
+                    print "Exception adding resources to package %s: %s" % (dataset['name'], msg)
+                    import inspect; print inspect.trace()
+                    continue
