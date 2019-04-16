@@ -1,6 +1,7 @@
 from ckan.lib.cli import CkanCommand
 from ckan.plugins import toolkit
 
+import json
 import sys
 import csv
 
@@ -14,7 +15,7 @@ class VectorStorer(CkanCommand):
            - Creates wms resources for existing geoserver layer
         paster vectorstorer add_wms_for_csv /path/to/csv
            - Creates wms resources for the csv, each line is package_id, layer
- 
+
     """
 
     """
@@ -29,6 +30,7 @@ class VectorStorer(CkanCommand):
 
     def command(self):
         self._load_config()
+
         if not self.args or self.args[0] in ['--help', '-h', 'help']:
             print self.__doc__
             return
@@ -40,6 +42,8 @@ class VectorStorer(CkanCommand):
             self.add_wms_for_layer(*self.args[1:])
         elif cmd == "add_wms_from_csv":
             self.add_wms_from_csv(*self.args[1:])
+        elif cmd == "add_datasets_from_json":
+            self.add_datasets_from_json(*self.args[1:])
         else:
             print self.__doc__
             return
@@ -83,7 +87,7 @@ class VectorStorer(CkanCommand):
         except toolkit.ObjectNotFound:
             print "Package %s not found" % args[0]
             raise
-            
+
 
         if not package:
             print("Package not found")
@@ -113,9 +117,45 @@ class VectorStorer(CkanCommand):
             print("Couldn't read input file: %s" % msg)
             sys.exit(4)
 
-                
 
-        
-                
-        
-    
+    def add_datasets_from_json(self, *args):
+        from ckan import model
+
+        with open(self.args[1], 'r') as f:
+            datasets = json.load(f)
+
+        package_create = toolkit.get_action('package_create')
+
+        context = toolkit.get_action('get_site_user')({},{})
+        # the orgs are distinct on the first 6 chars, but they are spelled differently in the CSV
+        # than in the database.
+        orgs = dict([(d['display_name'].lower(), d)
+                     for d in toolkit.get_action('organization_list')(context, {'all_fields': True})])
+
+        for dataset in datasets:
+            # need to get the site user each time, otherwise the session is borky and only one dataset is
+            # created.
+            context = toolkit.get_action('get_site_user')({},{})
+
+            org_name = dataset['org_name'].lower()
+            if not org_name in orgs:
+                print "Exception finding org: %s for dataset %s, continuing." %(org_name, dataset['title'])
+                print "\n".join(orgs.keys())
+                continue
+
+            resources = dataset['resources']
+            del(dataset['resources'])
+            dataset['owner_org'] = orgs[org_name]['id']
+
+            try:
+                pkg = package_create(context, dataset)
+                model.Session.commit()
+                for r in resources:
+                    print("Adding wms:  %s -- %s" % (r[0], r[1]))
+                    self.add_wms_for_layer(r[0].strip(), r[1].strip())
+            except Exception as msg:
+                print "Exception creating package %s: %s" % (dataset['name'], msg)
+                import inspect; print inspect.trace()
+                continue
+
+            print "Created package id: %s for %s" % (pkg['id'], pkg['title'])
