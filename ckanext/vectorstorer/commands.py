@@ -40,7 +40,9 @@ class VectorStorer(CkanCommand):
             self.add_wms_for_layer(*self.args[1:])
         elif cmd == "add_wms_from_csv":
             self.add_wms_from_csv(*self.args[1:])
-
+        else:
+            print self.__doc__
+            return
 
 
     def add_wms(self, *args):
@@ -78,7 +80,7 @@ class VectorStorer(CkanCommand):
         context = {'userobj': user, 'user': user['name']}
         try:
             package = toolkit.get_action('package_show')(context, {'id':args[0]})
-        except toolkit.NotFound:
+        except toolkit.ObjectNotFound:
             print "Package %s not found" % args[0]
             raise
             
@@ -103,7 +105,7 @@ class VectorStorer(CkanCommand):
                     try:
                         print("Adding wms:  %s -- %s" % (row[0], row[1]))
                         #import pdb; pdb.set_trace()
-                        self.add_wms_for_layer(row[1].strip(), row[0].strip())
+                        self.add_wms_for_layer(row[0].strip(), row[1].strip())
                     except Exception as msg:
                         print("Error adding layer: %s" % msg)
 
