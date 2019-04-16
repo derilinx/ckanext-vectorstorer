@@ -1,10 +1,10 @@
 {% ckan_extends %}
- 
+
 {% block resource_actions_inner %}
     {{super()}}
 
-    {% if res.format=="WMS" and res.vectorstorer_resource %}
-	    <li>{% link_for _('Edit Style'), named_route="vectorstorer_style", action='show', id=pkg.name, resource_id=res.id, class_='btn', icon='magic' %}</li>
+    {% if res.format=="WMS" and res.vectorstorer_resource and h.check_access('package_update', {'id':pkg.id }) %}
+        <li>{% link_for _('Edit Style'), named_route="vectorstorer_style", action='show', id=pkg.name, resource_id=res.id, class_='btn', icon='magic' %}</li>
     {% endif %}
 
     {% if not res.vectorstorer_resource %}
@@ -14,17 +14,8 @@
             {# Add check for geo formats #}
             <a class="btn btn-success" href="#" onclick="upload()"><i class="fa fa-upload"></i><i class="fa fa-globe"></i> Import GeoData</a>
         {% endif %}
-    {% elif c.resource.parent_resource_id %}
-        {% if res.format=="WMS" and res.vectorstorer_resource %}
-          <a class="btn btn-success" href="{{ h.url_for(controller='package', action='resource_read', id=c.pkg.id, resource_id=c.resource.parent_resource_id) }}"><i class="fa fa-files-o"></i><i class="fa fa-globe"></i> View Geo-Data</a>        
-        {% elif res.format=="DB_TABLE" and res.vectorstorer_resource %}
-          <a class="btn btn-success" href="{{ h.get_site_protocol_and_host() | join('://')  }}/geoserver/csw?service=CSW&version=2.0.2&request=GetRecordById&id=odm:{{ c.resource.id }}&typeNames=gmd:MD_Metadata&resultType=results&elementSetName=full&outputSchema=http://www.isotc211.org/2005/gmd"><i class="fa fa-flask"></i> OGC CSW API</a> 
-          <a class="btn btn-success" href="{{ h.url_for(controller='package', action='resource_read', id=c.pkg.id, resource_id=c.resource.parent_resource_id) }}"><i class="fa fa-level-up"></i><i class="fa fa-globe"></i> View Geo-Source</a> 
-        {% endif %}
     {% endif %}
     {% if res.vectorstorer_resource and res.format=='DB_TABLE' %}
-
-
 
            <li>{% link_for _('Export'), controller='ckanext.vectorstorer.controllers.export:ExportController', action='export',operation='index', id=pkg.name, resource_id=res.id, class_='btn', icon='magic' %}</li>
 
@@ -64,7 +55,7 @@
 {% endblock %}
 
 
-{% block scripts %}    
+{% block scripts %}
 {{ super() }}
     <script>
      var upload = function() {
@@ -80,7 +71,7 @@
              $('.flash-messages').append('<div class=\"alert fade in alert-info\">Submitted resource {{ c.resource.id }} to Datastore and GeoServer<a class=\"close\" href=\"#\">&#215;</a></div>');
          }).fail(function(jqXHR, errorStatus, errorThrown) {
              $('.flash-messages').append('<div class=\"alert fade in alert-error\">Could not submit resource {{ c.resource.id }} to Datastore and GeoServer. Error: ' + errorStatus + ' <a class=\"close\" href=\"#\">&#215;</a></div>');
-         });     
+         });
      }
          {% if res.format=="DB_TABLE" and res.vectorstorer_resource %}
          {# We don't have jQuery until later #}
@@ -92,11 +83,11 @@
                  type: "GET" ,
                  url: uparts[0] + "://" + uparts[1] + "/geoserver/odm/" + "{{ c.resource.id }}" + "/wms?service=WMS&request=GetCapabilities" ,
                  dataType: "xml" ,
-                 success: function(data) {  
-                     var wBL = $(data).find('westBoundLongitude')[0].innerHTML;  
-                     var eBL = $(data).find('eastBoundLongitude')[0].innerHTML; 
-                     var sBL = $(data).find('southBoundLatitude')[0].innerHTML; 
-                     var nBL = $(data).find('northBoundLatitude')[0].innerHTML; 
+                 success: function(data) {
+                     var wBL = $(data).find('westBoundLongitude')[0].innerHTML;
+                     var eBL = $(data).find('eastBoundLongitude')[0].innerHTML;
+                     var sBL = $(data).find('southBoundLatitude')[0].innerHTML;
+                     var nBL = $(data).find('northBoundLatitude')[0].innerHTML;
                      var crs = $(data).find('Layer')[1];
                      crs = $(crs).find('CRS');
                      crstext = "";
@@ -110,4 +101,3 @@
          {% endif %}
     </script>
 {% endblock %}
-
