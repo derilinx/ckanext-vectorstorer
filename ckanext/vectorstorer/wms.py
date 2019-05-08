@@ -46,6 +46,9 @@ def layers(wms):
 def superLayer(wms):
     return wms.find('.//%s' % ns('Layer'))
 
+def name_for_layer(layer):
+    return layer.find(ns('Name')).text
+
 def ex_geographicboundingbox(layer):
     bbox = layer.find(ns('EX_GeographicBoundingBox'))
     print list(bbox)

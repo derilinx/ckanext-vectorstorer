@@ -16,6 +16,10 @@ import ckan.plugins.toolkit as toolkit
 from ckanext.vectorstorer import settings
 import cgi
 
+from . import wms
+
+from ckan.common import config
+
 import logging
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -74,9 +78,9 @@ def _handle_resource(resource, db_conn_params, context, geoserver_context):
     user_api_key = context['apikey'].encode('utf8')
     resource_tmp_folder, _file_path = _download_resource(resource, user_api_key)
     log.debug("resource: %s, file_path: %s" % (resource, _file_path))
-    
+
     gdal_driver, file_path, prj_exists = _get_gdalDRV_filepath(resource, resource_tmp_folder,_file_path)
-    
+
     log.debug("Driver: %s, path: %s , proj_exists: %s" % (gdal_driver, file_path, prj_exists))
 
     if context.has_key('encoding'):
@@ -110,7 +114,7 @@ def _get_gdalDRV_filepath(resource, resource_tmp_folder,file_path):
     prj_exists = None
 
     log.debug("format: %s" %resource_format)
-    
+
     if resource_format == 'shp' or resource_format in settings.ARCHIVE_FORMATS:
         Archive(_file_path).extractall(resource_tmp_folder)
         is_shp, _file_path, prj_exists = _is_shapefile(resource_tmp_folder)
@@ -300,7 +304,7 @@ def _api_resource_action(context, resource, action):
     url = "%sapi/action/%s" % (context['site_url'], action)
     log.debug("adding resource")
     log.debug(json.dumps(resource))
-    
+
     headers = {'Authorization': api_key,
                'Content-type': 'application/json' }
 
@@ -376,3 +380,51 @@ def _delete_vectorstorer_resources(resource, context):
         _api_resource_action(context, resource, 'resource_delete')
 
 
+def get_wms():
+    geoserver_url= config['ckanext-vectorstorer.geoserver_url']
+    return wms.wms_from_url("%s/wms?request=GetCapabilities" % geoserver_url)
+
+def add_geowebcache_layer(layer_name):
+
+    log.debug('adding gwc layer for %s' % layer_name)
+
+    geoserver_url= config['ckanext-vectorstorer.geoserver_url']
+    username= config['ckanext-vectorstorer.geoserver_admin']
+    password= config['ckanext-vectorstorer.geoserver_password']
+
+    xml = """<GeoServerLayer>
+  <name>%s</name>
+  <enabled>true</enabled>
+  <mimeFormats>
+    <string>image/png</string>
+  </mimeFormats>
+  <metaWidthHeight>
+    <int>4</int>
+    <int>4</int>
+  </metaWidthHeight>
+  <expireCache>0</expireCache>
+  <expireClients>0</expireClients>
+  <gridSubsets>
+    <gridSubset>
+      <gridSetName>EPSG:900913</gridSetName>
+      <zoomStart>0</zoomStart>
+      <zoomStop>14</zoomStop>
+      <minCachedLevel>1</minCachedLevel>
+      <maxCachedLevel>9</maxCachedLevel>
+    </gridSubset>
+    <gridSubset>
+      <gridSetName>EPSG:4326</gridSetName>
+    </gridSubset>
+  </gridSubsets>
+  <autoCacheStyles>true</autoCacheStyles>
+  <gutter>50</gutter>
+</GeoServerLayer>
+""" % (layer_name)
+
+    resp = requests.put("%s/gwc/rest/layers/%s.xml" %(geoserver_url, layer_name),
+                        data=xml,
+                        headers={'Content-type':'text/xml'},
+                        auth=(username, password))
+    print(resp.text)
+    resp.raise_for_status()
+    return

@@ -5,6 +5,9 @@ import json
 import sys
 import csv
 
+import tasks
+import wms
+
 class VectorStorer(CkanCommand):
 
     """
@@ -44,6 +47,9 @@ class VectorStorer(CkanCommand):
             self.add_wms_from_csv(*self.args[1:])
         elif cmd == "add_datasets_from_json":
             self.add_datasets_from_json(*self.args[1:])
+        elif cmd == "add_gwc_layers":
+            self.add_gwc_layers(*self.args[1:])
+
         else:
             print self.__doc__
             return
@@ -184,3 +190,15 @@ class VectorStorer(CkanCommand):
                     print "Exception adding resources to package %s: %s" % (dataset['name'], msg)
                     import inspect; print inspect.trace()
                     continue
+
+    def add_gwc_layers(self, *args):
+        # https://data.odm-eu.staging.derilinx.com/geoserver/wms?service=WMS&version=1.1.0&request=GetCapabilities
+
+        print("Getting wms doc")
+        wms_doc = tasks.get_wms()
+        for layer in wms.layers(wms_doc):
+            try:
+                print("Adding GWC for %s" % wms.name_for_layer(layer))
+                tasks.add_geowebcache_layer(wms.name_for_layer(layer))
+            except Exception as msg:
+                print msg
