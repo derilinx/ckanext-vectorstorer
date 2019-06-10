@@ -1,5 +1,6 @@
 import os
-from xml.dom import minidom
+from lxml import etree
+
 from ckan.common import config
 from geoserver.catalog import Catalog
 from ckan.lib.base import BaseController, c, request, \
@@ -71,8 +72,14 @@ class StyleController(BaseController):
         if not layer:
             abort(404, "Could not retrieve layer")
         default_style=layer._get_default_style()
-        xml =  minidom.parseString(default_style.sld_body)
-        return xml.toprettyxml()
+        # UNDONE -- don't pretty print here.
+        # Need to encode/decode the xml, as xml is actually a bytestream,
+        # and at the submit end, we need to convert to a utf-8 bytestream.
+        #return default_style.sld_body.decode('utf-8')
+        # pretty printing with a better parser
+        parser = etree.XMLParser(remove_blank_text=True)
+        xml =  etree.fromstring(default_style.sld_body, parser)
+        return etree.tostring(xml, pretty_print=True)
 
     def _get_context(self,id,resource_id):
         context = {'model': model, 'session': model.Session,
@@ -113,10 +120,12 @@ class StyleController(BaseController):
             log.debug('default style name: %s' % default_style.name)
             if default_style.name == layer_name:
                 log.debug('is default style, updating default style')
-                cat.create_style(default_style.name, sld_body, overwrite=True, workspace=workspace)
+                # need to be encoding here. 
+                cat.create_style(default_style.name, sld_body.encode('utf-8'), overwrite=True, workspace=workspace, raw=True)
             else:
                 log.debug('creating a style for layer')
-                cat.create_style(layer_name, sld_body, overwrite=True, workspace=workspace)
+                # need to be encoding here. 
+                cat.create_style(layer_name, sld_body.encode('utf-8'), overwrite=True, workspace=workspace, raw=True)
                 log.debug('setting the default style')
                 layer._set_default_style(layer_name)
                 log.debug('saving layer')
