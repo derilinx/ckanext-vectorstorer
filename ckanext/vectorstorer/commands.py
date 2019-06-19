@@ -16,9 +16,12 @@ class VectorStorer(CkanCommand):
            - Creates wms resources for existing geoserver shp/kml resources
         paster vectorstorer add_wms_for_layer package_id layer
            - Creates wms resources for existing geoserver layer
-        paster vectorstorer add_wms_for_csv /path/to/csv
+        paster vectorstorer add_wms_from_csv /path/to/csv
            - Creates wms resources for the csv, each line is package_id, layer
-
+        paster vectorstorer add_datasets_from_json path/to/json
+           - Creates datasets for existing geoserver layers.
+        paster vectorstorer add_gwc_layers
+           - Creates gwc caching layers for all of the existing geoserver layers.
     """
 
     """
