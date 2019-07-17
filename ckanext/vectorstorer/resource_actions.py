@@ -119,31 +119,17 @@ def delete_vector_storer_task(resource, pkg_delete = False):
         _delete_child_resources(resource)
 
 
-def _delete_child_resources(parent_resource):
-    user = _get_site_user()
-    temp_context = {'model': ckan.model,
-     'user': user.get('name')}
-    current_package = get_action('package_show')(temp_context, {'id': parent_resource['package_id']})
-    resources = current_package['resources']
-    for child_resource in resources:
-        if child_resource.has_key('parent_resource_id'):
-            if child_resource['parent_resource_id'] == parent_resource['id']:
-                action_result = logic._actions['resource_delete'](temp_context, {'id': child_resource['id']})
+def _temp_context():
+    return {'model': ckan.model,
+            'user': _get_site_user().get('name')}
 
+def _delete_child_resources(parent_resource):
+    for child_resource in _get_child_resources(parent_resource):
+        action_result = logic._actions['resource_delete'](_temp_context(), {'id': child_resource })
 
 def _get_child_resources(parent_resource):
-    child_resources = []
-    user = _get_site_user()
-    temp_context = {'model': ckan.model,
-     'user': user.get('name')}
-    current_package = get_action('package_show')(temp_context, {'id': parent_resource['package_id']})
-    resources = current_package['resources']
-    for child_resource in resources:
-        if child_resource.has_key('parent_resource_id'):
-            if child_resource['parent_resource_id'] == parent_resource['id']:
-                child_resources.append(child_resource['id'])
-
-    return child_resources
+    package = get_action('package_show')(_temp_context(), {'id': parent_resource['package_id']})
+    return [r['id'] for r in package['resources'] if r.get('parent_resource_id','') == parent_resource['id']]
 
 
 def pkg_delete_vector_storer_task(package):
