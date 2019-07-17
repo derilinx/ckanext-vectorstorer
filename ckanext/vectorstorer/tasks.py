@@ -185,7 +185,6 @@ def _handle_vector(_vector, layer_idx, resource, context, geoserver_context):
         layer_name = layer.GetName()
         if 'OGR' in layer_name:
             layer_name = _vector.gdal_driver
-        layer_name = resource['name'] + ' - ' + layer_name
         geom_name = _vector.get_geometry_name(layer)
         srs_epsg = int(_vector.get_SRS(layer))
         spatial_ref = settings.osr.SpatialReference()
@@ -194,7 +193,7 @@ def _handle_vector(_vector, layer_idx, resource, context, geoserver_context):
         created_db_table_resource = _add_db_table_resource(context, resource, geom_name, layer_name)
         layer = _vector.get_layer(layer_idx)
         _vector.handle_layer(layer, geom_name, created_db_table_resource['id'].lower())
-        wms_server, wms_layer = _publish_layer(geoserver_context, created_db_table_resource, srs_wkt)
+        wms_server, wms_layer = _publish_layer(geoserver_context, created_db_table_resource, srs_wkt, layer_name)
         _add_wms_resource(context, layer_name, created_db_table_resource, wms_server, wms_layer)
         try:
             _add_db_table_resource_view(context, created_db_table_resource)
@@ -259,7 +258,7 @@ def _is_shapefile(res_folder_path):
         return (False, None, False)
 
 
-def _publish_layer(geoserver_context, resource, srs_wkt):
+def _publish_layer(geoserver_context, resource, srs_wkt, layer_name):
     log.debug('publishing layer for %s' % resource['name'])
     geoserver_url = geoserver_context['geoserver_url']
     geoserver_workspace = geoserver_context['geoserver_workspace']
@@ -268,11 +267,19 @@ def _publish_layer(geoserver_context, resource, srs_wkt):
     geoserver_ckan_datastore = geoserver_context['geoserver_ckan_datastore']
     resource_id = resource['id'].lower()
     resource_name = resource['name']
+    layer_name = layer_name or resource_id
     if DBTableResource.name_extention in resource_name:
         resource_name = resource_name.replace(DBTableResource.name_extention, '')
     resource_description = resource['description']
     url = geoserver_url + '/rest/workspaces/' + geoserver_workspace + '/datastores/' + geoserver_ckan_datastore + '/featuretypes'
-    data = '<featureType><name>%s</name><title>%s</title><abstract>%s</abstract><nativeCRS>%s</nativeCRS></featureType>' % (
+    data = """<featureType>
+                 <name>%s</name>
+                 <nativeName>%s</nativeName>
+                 <title>%s</title>
+                 <abstract>%s</abstract>
+                 <nativeCRS>%s</nativeCRS>
+              </featureType>""" % (
+        escape(layer_name),
         escape(resource_id),
         escape(resource_name),
         escape(resource_description),
@@ -294,7 +301,7 @@ def _publish_layer(geoserver_context, resource, srs_wkt):
         raise
     log.debug("sent layer to geoserver")
     wms_server = geoserver_url + '/wms'
-    wms_layer = geoserver_workspace + ':' + resource_id
+    wms_layer = geoserver_workspace + ':' + layer_name
     log.debug('published layer %s' % wms_layer)
     return (wms_server, wms_layer)
 
