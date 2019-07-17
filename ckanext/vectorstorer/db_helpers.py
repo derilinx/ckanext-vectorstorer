@@ -17,9 +17,12 @@ class DB:
             return True
         else:
             return False
+
     def create_table(self,table_name,fin,geometry,srs,coordinate_dimension):
         self.cursor.execute("CREATE TABLE \"%s\" (_id serial PRIMARY KEY, %s);"%(table_name,fin))
         self.cursor.execute("SELECT AddGeometryColumn ('%s','the_geom',%s,'%s',%s);"%(table_name,srs,geometry,coordinate_dimension))
+        # this has to be last because they use unnamed inserts, and that can generallt ignore the last column
+        self.cursor.execute('''alter table "%s" add column _full_text tsvector''' %(table_name))
 
     def insert_to_table(self,table,fields,geometry_text,convert_to_multi,srs):
         if convert_to_multi:
