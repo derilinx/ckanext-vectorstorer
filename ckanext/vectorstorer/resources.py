@@ -14,7 +14,7 @@ class WMSResource:
     _wms_layer= None
     _vectorstorer_resource= u'vectorstorer_wms'
 
-    def __init__(self,package_id, name, description, parent_resource_id, wms_server,wms_layer):
+    def __init__(self,package_id, name, description, parent_resource_id, wms_server,wms_layer, lang=''):
         self._package_id=package_id
         self._name=name + self.name_extention
         self._description=description
@@ -23,7 +23,7 @@ class WMSResource:
         self._parent_resource_id=parent_resource_id
         self._wms_server=wms_server
         self._wms_layer=wms_layer
-
+        self.lang = lang
 
     def get_as_dict(self):
         server_parts = self._wms_server.split('/')
@@ -51,7 +51,9 @@ class WMSResource:
             "wms_server": self._wms_server,
             "wms_layer": self._wms_layer,
             "name":self._name,
-            "description": self._description }
+            "description": self._description,
+            "MD_DataIdentification_language": self.lang,
+        }
 
         return resource
 
@@ -68,26 +70,31 @@ class DBTableResource:
     _geometry= None
     _vectorstorer_resource= u'vectorstorer_db'
 
-    def __init__(self,package_id, name, description, parent_resource_id, url, geometry):
+    def __init__(self,package_id, name, description, parent_resource_id, url, geometry, lang=''):
         self._package_id=package_id
         self._name=name + self.name_extention
         self._description=description
         self._url=url
         self._parent_resource_id=parent_resource_id
         self._geometry=geometry
+        self.lang = lang
+
 
 
     def get_as_dict(self):
         resource = {
-          "package_id":unicode(self._package_id),
-          "url":self._url,
-          "url_type":self._url_type,
-          "format":self._format,
-          "parent_resource_id":self._parent_resource_id,
-          "geometry":self._geometry,
-          'vectorstorer_resource': self._vectorstorer_resource,
-          "datastore_active": self._datastore_active,
-          "name":self._name,
-          "description": self._description }
+            "package_id":unicode(self._package_id),
+            "url":self._url,
+            "url_type":self._url_type,
+            "format":self._format,
+            "parent_resource_id":self._parent_resource_id,
+            "geometry":self._geometry,
+            'vectorstorer_resource': self._vectorstorer_resource,
+            "datastore_active": self._datastore_active,
+            "name":self._name,
+            "description": self._description,
+            "MD_DataIdentification_language": self.lang,
+
+        }
 
         return resource
