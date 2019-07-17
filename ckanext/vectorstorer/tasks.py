@@ -73,7 +73,7 @@ def vectorstorer_upload(geoserver_cont, cont, data):
     _handle_resource(resource, db_conn_params, context, geoserver_context)
 
 
-def _handle_resource(resource, db_conn_params, context, geoserver_context):
+def _handle_resource(resource, db_conn_params, context, geoserver_context, WMS=None, DB_TABLE=None):
     log.debug("task: _handle_resource")
     user_api_key = context['apikey'].encode('utf8')
     resource_tmp_folder, _file_path = _download_resource(resource, user_api_key)
@@ -99,9 +99,9 @@ def _handle_resource(resource, db_conn_params, context, geoserver_context):
         for layer_idx in range(0, layer_count):
             if _selected_layers:
                 if str(layer_idx) in _selected_layers:
-                    _handle_vector(_vector, layer_idx, resource, context, geoserver_context)
+                    _handle_vector(_vector, layer_idx, resource, context, geoserver_context, WMS=WMS, DB_TABLE=DB_TABLE)
             else:
-                _handle_vector(_vector, layer_idx, resource, context, geoserver_context)
+                _handle_vector(_vector, layer_idx, resource, context, geoserver_context, WMS=DB_TABLE, DB_TABLE=DB_TABLE)
 
     _delete_temp(resource_tmp_folder)
 
@@ -178,7 +178,7 @@ def _get_tmp_file_path(resource_tmp_folder, resource):
     return file_path
 
 
-def _handle_vector(_vector, layer_idx, resource, context, geoserver_context):
+def _handle_vector(_vector, layer_idx, resource, context, geoserver_context, WMS=None, DB_TABLE=None):
     log.debug('handle_vector')
     layer = _vector.get_layer(layer_idx)
     if layer and layer.GetFeatureCount() > 0:
@@ -190,15 +190,20 @@ def _handle_vector(_vector, layer_idx, resource, context, geoserver_context):
         spatial_ref = settings.osr.SpatialReference()
         spatial_ref.ImportFromEPSG(srs_epsg)
         srs_wkt = spatial_ref.ExportToWkt()
-        created_db_table_resource = _add_db_table_resource(context, resource, geom_name, layer_name)
+        if DB_TABLE:
+            created_db_table_resource = DB_TABLE[0]
+        else:
+            created_db_table_resource = _add_db_table_resource(context, resource, geom_name, layer_name)
         layer = _vector.get_layer(layer_idx)
         _vector.handle_layer(layer, geom_name, created_db_table_resource['id'].lower())
-        wms_server, wms_layer = _publish_layer(geoserver_context, created_db_table_resource, srs_wkt, layer_name)
-        _add_wms_resource(context, layer_name, created_db_table_resource, wms_server, wms_layer)
-        try:
-            _add_db_table_resource_view(context, created_db_table_resource)
-        except:
-            pass #This currently fails because of https://github.com/ckan/ckan/pull/3444#issuecomment-312216983
+        if not WMS:
+            wms_server, wms_layer = _publish_layer(geoserver_context, created_db_table_resource, srs_wkt, layer_name)
+            _add_wms_resource(context, layer_name, created_db_table_resource, wms_server, wms_layer)
+        if not DB_TABLE:
+            try:
+                _add_db_table_resource_view(context, created_db_table_resource)
+            except:
+                pass #This currently fails because of https://github.com/ckan/ckan/pull/3444#issuecomment-312216983
 
 def _add_db_table_resource(context, resource, geom_name, layer_name):
     log.debug('adding db table resource')
@@ -333,15 +338,13 @@ def vectorstorer_update(geoserver_cont, cont, data):
     geoserver_context = json.loads(geoserver_cont)
     db_conn_params = context['db_params']
     resource_ids = context['resource_list_to_delete']
-    if len(resource_ids) > 0:
-        for res_id in resource_ids:
-            res = {'id': res_id}
-            try:
-                _api_resource_action(context, res, RESOURCE_DELETE_ACTION)
-            except requests.exceptions.HTTPError as e:
-                print e.reason
+    resources = [ _api_resource_action(context, {'id':res_id }, 'resource_show') for res_id in resource_ids ]
+    if not resources: return
 
-    _handle_resource(resource, db_conn_params, context, geoserver_context)
+    DB_TABLE = [r for r in resources if r['format'] == 'DB_TABLE']
+    WMS = [r for r in resources if r['format'] == 'WMS']
+
+    _handle_resource(resource, db_conn_params, context, geoserver_context, WMS=WMS, DB_TABLE=DB_TABLE)
 
 
 def vectorstorer_delete(geoserver_cont, cont, data):

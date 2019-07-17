@@ -37,6 +37,7 @@ class Vector:
         return self.dataSource.GetLayer(layer_idx)
 
     def handle_layer(self, layer, geom_name, table_name):
+        # parse layer and push to db
         srs = self.get_SRS(layer)
         featureCount = layer.GetFeatureCount()
         layerDefinition = layer.GetLayerDefn()
@@ -47,6 +48,7 @@ class Vector:
         feat_geom = feat.GetGeometryRef()
         coordinate_dimension = feat_geom.GetCoordinateDimension()
         layer.ResetReading()
+        # create_table is now safe to use in a data-reload context
         self._db.create_table(table_name, fields, geom_name, srs, coordinate_dimension)
         self.write_to_db(table_name, layer, srs, geom_name)
 

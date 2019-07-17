@@ -121,13 +121,14 @@ class VectorStorer(SingletonPlugin):
                 ##A vectorstorer resource has been deleted
                 #resource_actions.delete_vector_storer_task(entity.as_dict())
 
-            #elif operation is None:
+            elif operation is None:
                 ##Resource Url has changed
 
-                #if entity.format.lower() in settings.SUPPORTED_DATA_FORMATS:
-                    ##Vector file was updated
+                if entity.format.lower() in settings.SUPPORTED_DATA_FORMATS:
+                    #Vector file was potentially updated
+                    # is there an existing DB_TABLE or WMS layer?
 
-                    #resource_actions.update_vector_storer_task(entity)
+                    resource_actions.update_vector_storer_task(entity)
 
                 #else :
                     ##Resource File updated but not in supported formats
