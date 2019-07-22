@@ -7,6 +7,8 @@ from ckan.lib.base import BaseController, c, request, \
                           response, session, render, config, abort
 from ckan.plugins import toolkit
 
+from . import settings
+
 from geoserver.catalog import UploadError
 from ckan.logic import *
 from ckan.common import _
@@ -92,8 +94,8 @@ class StyleController(BaseController):
             c.package = get_action('package_show')(context, {'id': id})
             c.pkg = context['package']
             c.pkg_dict = c.package
-            if c.resource.has_key('vectorstorer_resource') and c.resource['format'].lower()=='wms':
-                   c.layer_id=c.resource['wms_layer']
+            if c.resource.has_key('vectorstorer_resource') and c.resource['format'] == settings.WMS_FORMAT:
+                c.layer_id=c.resource['wms_layer']
             else:
                 raise NotVectorStorerWMS
         except NotVectorStorerWMS:

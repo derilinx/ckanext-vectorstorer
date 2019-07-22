@@ -70,12 +70,12 @@ class VectorStorer(SingletonPlugin):
             def new_resource_update(context, data_dict):
                 resource=ckan.model.Session.query(model.Resource).get(data_dict['id']).as_dict()
                 if resource.has_key('vectorstorer_resource'):
-                    if resource['format'].lower()==settings.WMS_FORMAT:
+                    if resource['format']==settings.WMS_FORMAT:
                         data_dict['parent_resource_id']=resource['parent_resource_id']
                         data_dict['vectorstorer_resource']=resource['vectorstorer_resource']
                         data_dict['wms_server']=resource['wms_server']
                         data_dict['wms_layer']=resource['wms_layer']
-                    if resource['format'].lower()==settings.DB_TABLE_FORMAT:
+                    if resource['format']==settings.DB_TABLE_FORMAT:
                         data_dict['vectorstorer_resource']=resource['vectorstorer_resource']
                         data_dict['parent_resource_id']=resource['parent_resource_id']
                         data_dict['geometry']=resource['geometry']

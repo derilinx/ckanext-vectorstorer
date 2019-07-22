@@ -1,6 +1,8 @@
 from urlparse import urlparse, urljoin
 from urllib import urlencode
 
+from . import settings
+
 class WMSResource:
     name_extention=" Web Map Service in GeoServer"
     _get_capabilities_url="?service=WMS&request=GetCapabilities"
@@ -8,7 +10,7 @@ class WMSResource:
     _description= None
     _package_id= None
     _url= None
-    _format= u'WMS'
+    _format= settings.WMS_FORMAT
     _parent_resource_id=None
     _wms_server= None
     _wms_layer= None
@@ -64,7 +66,7 @@ class DBTableResource:
     _package_id= None
     _url= None
     _url_type='datastore'
-    _format= 'DB_TABLE'
+    _format= settings.DB_TABLE_FORMAT
     _datastore_active=True
     _parent_resource_id=None
     _geometry= None

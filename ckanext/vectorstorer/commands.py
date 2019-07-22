@@ -7,6 +7,7 @@ import csv
 
 import tasks
 import wms
+from . import settings
 
 class VectorStorer(CkanCommand):
 
@@ -74,7 +75,7 @@ class VectorStorer(CkanCommand):
         for pkg in pkg_dict.values():
             print("%s, %s resources" %(pkg['name'], len(pkg['resources'])))
 
-            if any(res['format'] =='WMS' for res in pkg['resources']):
+            if any(res['format'] == settings.WMS_FORMAT for res in pkg['resources']):
                 print("found wms, continuing")
                 continue
 

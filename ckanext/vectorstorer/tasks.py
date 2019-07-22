@@ -101,7 +101,7 @@ def _handle_resource(resource, db_conn_params, context, geoserver_context, WMS=N
                 if str(layer_idx) in _selected_layers:
                     _handle_vector(_vector, layer_idx, resource, context, geoserver_context, WMS=WMS, DB_TABLE=DB_TABLE)
             else:
-                _handle_vector(_vector, layer_idx, resource, context, geoserver_context, WMS=DB_TABLE, DB_TABLE=DB_TABLE)
+                _handle_vector(_vector, layer_idx, resource, context, geoserver_context, WMS=WMS, DB_TABLE=DB_TABLE)
 
     _delete_temp(resource_tmp_folder)
 
@@ -349,8 +349,8 @@ def vectorstorer_update(geoserver_cont, cont, data):
     resources = [ _api_resource_action(context, {'id':res_id }, 'resource_show') for res_id in resource_ids ]
     if not resources: return
 
-    DB_TABLE = [r for r in resources if r['format'] == 'DB_TABLE']
-    WMS = [r for r in resources if r['format'] == 'WMS']
+    DB_TABLE = [r for r in resources if r['format'] == settings.DB_TABLE_FORMAT]
+    WMS = [r for r in resources if r['format'] == settings.WMS_FORMAT]
 
     _handle_resource(resource, db_conn_params, context, geoserver_context, WMS=WMS, DB_TABLE=DB_TABLE)
 
@@ -361,10 +361,10 @@ def vectorstorer_delete(geoserver_cont, cont, data):
     context = json.loads(cont)
     geoserver_context = json.loads(geoserver_cont)
     db_conn_params = context['db_params']
-    if resource.has_key('format'):
-        if resource['format'] == settings.DB_TABLE_FORMAT:
+    res_format = resource.get('format', None)
+    if res_format == settings.DB_TABLE_FORMAT:
             _delete_from_datastore(resource['id'], db_conn_params, context)
-        elif resource['format'] == settings.WMS_FORMAT:
+    elif res_format == settings.WMS_FORMAT:
             _unpublish_from_geoserver(resource['parent_resource_id'], geoserver_context)
     resource_ids = context['resource_list_to_delete']
     if resource_ids:

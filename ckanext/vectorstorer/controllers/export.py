@@ -300,7 +300,7 @@ class ExportController(BaseController):
             c.package = get_action('package_show')(context, {'id': id})
             c.pkg = context['package']
             c.pkg_dict = c.package
-            if not (c.resource.has_key('vectorstorer_resource') and c.resource['format'].lower() == settings.DB_TABLE_FORMAT):
+            if not (c.resource.has_key('vectorstorer_resource') and c.resource['format'] == settings.DB_TABLE_FORMAT):
                 raise NotVectorStorerDB
 
         except NotVectorStorerDB:
