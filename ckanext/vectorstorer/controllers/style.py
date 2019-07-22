@@ -36,7 +36,7 @@ class StyleController(BaseController):
             fileExtension = os.path.splitext(sld_file_param.filename)[1]
             if fileExtension.lower() in (".xml", ".sld"):
                 sld_file=sld_file_param.file
-                c.sld_body=sld_file.read()
+                c.sld_body=sld_file.read().decode('utf-8')
             else:
                 raise AttributeError
         except AttributeError:
