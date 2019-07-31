@@ -215,7 +215,7 @@ def _add_db_table_resource(context, resource, geom_name, layer_name):
                                         resource['id'],
                                         'http://_datastore_only_resource',
                                         geom_name,
-                                        json.loads(resource.get('MD_DataIdentification_language',''))
+                                        json.loads(resource.get('MD_DataIdentification_language','[]'))
     )
     db_res_as_dict = db_table_resource.get_as_dict()
     created_db_table_resource = _api_resource_action(context, db_res_as_dict, RESOURCE_CREATE_ACTION)
