@@ -7,7 +7,7 @@ import csv
 
 import tasks
 import wms
-from . import settings
+from . import settings, resource_actions
 
 class VectorStorer(CkanCommand):
 
@@ -69,7 +69,7 @@ class VectorStorer(CkanCommand):
         if len(args):
             packages = [toolkit.get_action('package_show')(context, {'id':args[0]})]
         else:
-            packages = toolkit.get_action('package_search')(context, {'q':'kml|shp', 'rows':1000})['results']
+            packages = toolkit.get_action('package_search')(context, {'q':'kml|shp|GeoJSON', 'rows':1000})['results']
             pkg_dict = dict([(p['id'], p) for p in packages])
 
         for pkg in pkg_dict.values():
@@ -81,11 +81,20 @@ class VectorStorer(CkanCommand):
 
             for res in pkg['resources']:
                 #print res['format'], res['url']
-                if res['format'] in ('KML', 'SHP') and geoserver_url in res['url']:
-                    print("Adding WMS for %s %s" % (pkg['name'], res['id']))
+                if (res['format'] in ('KML', 'SHP') and geoserver_url in res['url']):
+                    print("Adding WMS for %s: %s %s" % (res['format'], pkg['name'], res['id']))
                     new_resource = toolkit.get_action('vectorstorer_add_wms')(context,{'id':res['id']})
-                    print("Added new resource: %s" % new_resource['name'])
-                    break
+                    if new_resource:
+                        print("Added new resource: %s" % new_resource['name'])                        
+                        break
+                    else:
+                        print("Didn't save a new resource, continuing")
+                if res['format'] == 'GeoJSON':
+                    print("Adding new GeoJSON resource")
+                    tasks.vectorstorer_upload(resource_actions.get_geoserver_context(),
+                                              resource_actions.get_context({'package_id':res['package_id']}),
+                                              json.dumps(res))
+                    
 
     def add_wms_for_layer(self, *args):
         user = toolkit.get_action('get_site_user')({'ignore_auth': True,

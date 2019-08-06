@@ -36,6 +36,18 @@ class Vector:
     def get_layer(self, layer_idx):
         return self.dataSource.GetLayer(layer_idx)
 
+    def preflight_layer(self, layer):
+        # parse layer and push to db
+        layer.ResetReading()
+        feat = layer.GetNextFeature()
+        feat_geom = feat.GetGeometryRef()
+        try:
+            coordinate_dimension = feat_geom.GetCoordinateDimension()
+        except AttributeError:
+            # This is from ESRI geojsons that don't actually have a geo field
+            return False
+        return True
+    
     def handle_layer(self, layer, geom_name, table_name):
         # parse layer and push to db
         srs = self.get_SRS(layer)
@@ -46,11 +58,16 @@ class Vector:
         layer.ResetReading()
         feat = layer.GetNextFeature()
         feat_geom = feat.GetGeometryRef()
-        coordinate_dimension = feat_geom.GetCoordinateDimension()
+        try:
+            coordinate_dimension = feat_geom.GetCoordinateDimension()
+        except AttributeError:
+            # This is from ESRI geojsons that don't actually have a geo field
+            return False
         layer.ResetReading()
         # create_table is now safe to use in a data-reload context
         self._db.create_table(table_name, fields, geom_name, srs, coordinate_dimension)
         self.write_to_db(table_name, layer, srs, geom_name)
+        return True
 
     def get_SRS(self, layer):
         if not layer.GetSpatialRef() == None:

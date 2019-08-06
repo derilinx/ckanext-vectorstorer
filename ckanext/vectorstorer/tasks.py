@@ -76,7 +76,12 @@ def vectorstorer_upload(geoserver_cont, cont, data):
 def _handle_resource(resource, db_conn_params, context, geoserver_context, WMS=None, DB_TABLE=None):
     log.debug("task: _handle_resource")
     user_api_key = context['apikey'].encode('utf8')
-    resource_tmp_folder, _file_path = _download_resource(resource, user_api_key)
+    try:
+        resource_tmp_folder, _file_path = _download_resource(resource, user_api_key)
+    except Exception as msg:
+        log.error("Exception downloading resource: %s, %s" % (resource['id'], msg))
+        return
+    
     log.debug("resource: %s, file_path: %s" % (resource, _file_path))
 
     gdal_driver, file_path, prj_exists = _get_gdalDRV_filepath(resource, resource_tmp_folder,_file_path)
@@ -184,12 +189,27 @@ def _handle_vector(_vector, layer_idx, resource, context, geoserver_context, WMS
     if layer and layer.GetFeatureCount() > 0:
         layer_name = layer.GetName()
         if 'OGR' in layer_name:
-            layer_name = _vector.gdal_driver
+            layer_name = resource['name']
         geom_name = _vector.get_geometry_name(layer)
         srs_epsg = int(_vector.get_SRS(layer))
         spatial_ref = settings.osr.SpatialReference()
         spatial_ref.ImportFromEPSG(srs_epsg)
         srs_wkt = spatial_ref.ExportToWkt()
+
+        if not WMS:
+            if _check_layer(geoserver_context, layer_name):  # name hit
+                # Try the package name
+                pkg = toolkit.get_action('package_show')(context,{'id': resource['package_id']})
+                if not _check_layer(geoserver_context, pkg['name']):
+                    layer_name = pkg['name']
+                else:
+                    # Or, just use the resource name
+                    layer_name = resource['id']
+
+        if not _vector.preflight_layer(layer):
+            log.error('Resource does not have appropriate geom column, skipping')
+            return False
+        
         if DB_TABLE:
             created_db_table_resource = DB_TABLE[0]
         else:
@@ -270,7 +290,11 @@ def _is_shapefile(res_folder_path):
     else:
         return (False, None, False)
 
-
+def _check_layer(geoserver_context, layer_name):
+    url = ('%(geoserver_url)s/rest/workspaces/%(geoserver_workspace)s/datastores/%(geoserver_ckan_datastore)s/featuretypes/' % geoserver_context) + layer_name
+    resp = requests.get(url, auth=(geoserver_context['geoserver_admin'], geoserver_context['geoserver_password']))
+    return resp.status_code == 200
+    
 def _publish_layer(geoserver_context, resource, srs_wkt, layer_name):
     log.debug('publishing layer for %s' % resource['name'])
     geoserver_url = geoserver_context['geoserver_url']

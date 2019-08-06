@@ -50,7 +50,7 @@ def identify_resource(resource_obj):
     #ckan.model.Session.add(res_identify)
 
 
-def _get_geoserver_context():
+def get_geoserver_context():
     geoserver_context = json.dumps({'geoserver_url': config['ckanext-vectorstorer.geoserver_url'],
      'geoserver_workspace': config['ckanext-vectorstorer.geoserver_workspace'],
      'geoserver_admin': config['ckanext-vectorstorer.geoserver_admin'],
@@ -58,46 +58,42 @@ def _get_geoserver_context():
      'geoserver_ckan_datastore': config['ckanext-vectorstorer.geoserver_ckan_datastore']})
     return geoserver_context
 
-
-def create_vector_storer_task(resource, extra_params = None):
+def get_context(additional=None):
     user = _get_site_user()
-    resource_package_id = resource.as_dict()['package_id']
-    cont = {'package_id': resource_package_id,
+    context = {
      'site_url': _get_site_url(),
      'apikey': user.get('apikey'),
      'site_user_apikey': user.get('apikey'),
      'user': user.get('name'),
      'db_params': config['ckan.datastore.write_url']}
-    if extra_params:
-        for key, value in extra_params.iteritems():
-            cont[key] = value
+    if additional:
+        context.update(additional)
+    return json.dumps(context)
 
-    context = json.dumps(cont)
-    geoserver_context = _get_geoserver_context()
+def create_vector_storer_task(resource, extra_params = None):
+    resource_package_id = resource.as_dict()['package_id']
+    extra_items = {'package_id': resource_package_id}
+    if extra_params:
+        extra_items.update(extra_params)
+    context = get_context(extra_items)
+    geoserver_context = get_geoserver_context()
     data = json.dumps(resource_dictize(resource, {'model': model}))
     log.debug('create vectorstore task')
     jobs.enqueue(tasks.vectorstorer_upload, [geoserver_context, context, data])
 
 
 def update_vector_storer_task(resource):
-    user = _get_site_user()
     resource_package_id = resource.as_dict()['package_id']
     resource_list_to_delete = _get_child_resources(resource.as_dict())
-    context = json.dumps({'resource_list_to_delete': resource_list_to_delete,
-     'package_id': resource_package_id,
-     'site_url': _get_site_url(),
-     'apikey': user.get('apikey'),
-     'site_user_apikey': user.get('apikey'),
-     'user': user.get('name'),
-     'db_params': config['ckan.datastore.write_url']})
-    geoserver_context = _get_geoserver_context()
+    context = get_context({'resource_list_to_delete': resource_list_to_delete,
+                           'package_id': resource_package_id})
+    geoserver_context = get_geoserver_context()
     data = json.dumps(resource_dictize(resource, {'model': model}))
     log.debug('update vectorstore task')
     jobs.enqueue(tasks.vectorstorer_update, [geoserver_context, context, data])
 
 
 def delete_vector_storer_task(resource, pkg_delete = False):
-    user = _get_site_user()
     data = None
     resource_list_to_delete = None
     if resource['format'] in (settings.WMS_FORMAT, settings.DB_TABLE_FORMAT) and resource.has_key('vectorstorer_resource'):
@@ -107,13 +103,8 @@ def delete_vector_storer_task(resource, pkg_delete = False):
     else:
         data = json.dumps(resource)
         resource_list_to_delete = _get_child_resources(resource)
-    context = json.dumps({'resource_list_to_delete': resource_list_to_delete,
-     'site_url': _get_site_url(),
-     'apikey': user.get('apikey'),
-     'site_user_apikey': user.get('apikey'),
-     'user': user.get('name'),
-     'db_params': config['ckan.datastore.write_url']})
-    geoserver_context = _get_geoserver_context()
+    context = get_context({'resource_list_to_delete': resource_list_to_delete})
+    geoserver_context = get_geoserver_context()
     jobs.enqueue(tasks.vectorstorer_delete, [geoserver_context, context, data])
     if resource.has_key('vectorstorer_resource') and not pkg_delete:
         _delete_child_resources(resource)
