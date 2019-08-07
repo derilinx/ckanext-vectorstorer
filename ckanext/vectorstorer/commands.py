@@ -89,8 +89,8 @@ class VectorStorer(CkanCommand):
                         break
                     else:
                         print("Didn't save a new resource, continuing")
-                if res['format'] == 'GeoJSON':
-                    print("Adding new GeoJSON resource")
+                if res['format'] in ('GeoJSON', 'KML'):
+                    print("Adding new Remote GeoJSON/KML resource")
                     tasks.vectorstorer_upload(resource_actions.get_geoserver_context(),
                                               resource_actions.get_context({'package_id':res['package_id']}),
                                               json.dumps(res))
