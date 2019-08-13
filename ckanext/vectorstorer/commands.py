@@ -45,6 +45,8 @@ class VectorStorer(CkanCommand):
         cmd = self.args[0]
         if cmd == "add_wms":
             self.add_wms(*self.args[1:])
+        elif cmd == "add_wms_for_datastore":
+            self.add_wms_for_datastore(*self.args[1:])            
         elif cmd == "add_wms_for_layer":
             self.add_wms_for_layer(*self.args[1:])
         elif cmd == "add_wms_from_csv":
@@ -96,6 +98,20 @@ class VectorStorer(CkanCommand):
                                               json.dumps(res))
                     
 
+    def add_wms_for_datastore(self, *args):
+        pkg_id = args[0]
+        res_id = args[1]
+
+        context = json.loads(resource_actions.get_context())
+        
+        pkg = toolkit.get_action('package_show')(context, {'name_or_id': pkg_id})
+        res = toolkit.get_action('resource_show')(context, {'id': res_id})
+        context['package_id'] = pkg['id']
+        
+        geoserver_context = json.loads(resource_actions.get_geoserver_context())
+
+        tasks.add_wms(context, geoserver_context, res, 4326, pkg['name'])
+                    
     def add_wms_for_layer(self, *args):
         user = toolkit.get_action('get_site_user')({'ignore_auth': True,
                                                     'defer_commit': True}, {})

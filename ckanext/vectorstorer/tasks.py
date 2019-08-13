@@ -182,6 +182,10 @@ def _get_tmp_file_path(resource_tmp_folder, resource):
     file_path = resource_tmp_folder + resource_file_name
     return file_path
 
+def epsg_to_wkt(epsg):
+    spatial_ref = settings.osr.SpatialReference()
+    spatial_ref.ImportFromEPSG(epsg)
+    return spatial_ref.ExportToWkt()
 
 def _handle_vector(_vector, layer_idx, resource, context, geoserver_context, WMS=None, DB_TABLE=None):
     log.debug('handle_vector')
@@ -196,9 +200,6 @@ def _handle_vector(_vector, layer_idx, resource, context, geoserver_context, WMS
             layer_name = layer_name.replace('#', '')
         geom_name = _vector.get_geometry_name(layer)
         srs_epsg = int(_vector.get_SRS(layer))
-        spatial_ref = settings.osr.SpatialReference()
-        spatial_ref.ImportFromEPSG(srs_epsg)
-        srs_wkt = spatial_ref.ExportToWkt()
 
         if not WMS:
             if _check_layer(geoserver_context, layer_name):  # name hit
@@ -221,13 +222,17 @@ def _handle_vector(_vector, layer_idx, resource, context, geoserver_context, WMS
         layer = _vector.get_layer(layer_idx)
         _vector.handle_layer(layer, geom_name, created_db_table_resource['id'].lower())
         if not WMS:
-            wms_server, wms_layer = _publish_layer(geoserver_context, created_db_table_resource, srs_wkt, layer_name)
-            _add_wms_resource(context, layer_name, created_db_table_resource, wms_server, wms_layer)
+            add_wms(context, geoserver_context, created_db_table_resource, srs_epsg, layer_name)
         if not DB_TABLE:
             try:
                 _add_db_table_resource_view(context, created_db_table_resource)
             except:
                 pass #This currently fails because of https://github.com/ckan/ckan/pull/3444#issuecomment-312216983
+
+
+def add_wms(context, geoserver_context, created_db_table_resource, srs_epsg, layer_name):
+    wms_server, wms_layer = _publish_layer(geoserver_context, created_db_table_resource, epsg_to_wkt(srs_epsg), layer_name)
+    _add_wms_resource(context, layer_name, created_db_table_resource, wms_server, wms_layer)
 
 def _add_db_table_resource(context, resource, geom_name, layer_name):
     log.debug('adding db table resource')
