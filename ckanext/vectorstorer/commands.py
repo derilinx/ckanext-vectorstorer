@@ -46,7 +46,9 @@ class VectorStorer(CkanCommand):
         if cmd == "add_wms":
             self.add_wms(*self.args[1:])
         elif cmd == "add_wms_for_datastore":
-            self.add_wms_for_datastore(*self.args[1:])            
+            self.add_wms_for_datastore(*self.args[1:])
+        elif cmd == "add_wms_for_remote":
+            self.add_wms_for_remote(*self.args[1:])
         elif cmd == "add_wms_for_layer":
             self.add_wms_for_layer(*self.args[1:])
         elif cmd == "add_wms_from_csv":
@@ -71,7 +73,7 @@ class VectorStorer(CkanCommand):
         if len(args):
             packages = [toolkit.get_action('package_show')(context, {'id':args[0]})]
         else:
-            packages = toolkit.get_action('package_search')(context, {'q':'kml|shp|GeoJSON', 'rows':1000})['results']
+            packages = toolkit.get_action('package_search')(context, {'q':'kml|shp', 'rows':1000})['results']
             pkg_dict = dict([(p['id'], p) for p in packages])
 
         for pkg in pkg_dict.values():
@@ -87,16 +89,41 @@ class VectorStorer(CkanCommand):
                     print("Adding WMS for %s: %s %s" % (res['format'], pkg['name'], res['id']))
                     new_resource = toolkit.get_action('vectorstorer_add_wms')(context,{'id':res['id']})
                     if new_resource:
-                        print("Added new resource: %s" % new_resource['name'])                        
-                        break
+                        print("Added new resource: %s" % new_resource['name'])
                     else:
                         print("Didn't save a new resource, continuing")
+
+    def add_wms_for_remote(self, *args):
+        #geoserver_url = toolkit.config['ckanext-vectorstorer.geoserver_url']
+        geoserver_url = '/geoserver'
+        user = toolkit.get_action('get_site_user')({'ignore_auth': True,
+                                                    'defer_commit': True}, {})
+
+        context = {'userobj': user, 'user': user['name']}
+        if len(args):
+            packages = [toolkit.get_action('package_show')(context, {'id':args[0]})]
+        else:
+            packages = toolkit.get_action('package_search')(context, {'q':'kml|GeoJSON', 'rows':1000})['results']
+            pkg_dict = dict([(p['id'], p) for p in packages])
+
+        for pkg in pkg_dict.values():
+            print("%s, %s resources" %(pkg['name'], len(pkg['resources'])))
+
+            if any(res['format'] == settings.WMS_FORMAT for res in pkg['resources']):
+                print("found wms, continuing")
+                continue
+
+            for res in pkg['resources']:
+                #print res['format'], res['url']
                 if res['format'] in ('GeoJSON', 'KML'):
                     print("Adding new Remote GeoJSON/KML resource")
-                    tasks.vectorstorer_upload(resource_actions.get_geoserver_context(),
-                                              resource_actions.get_context({'package_id':res['package_id']}),
-                                              json.dumps(res))
-                    
+                    try:
+                        tasks.vectorstorer_upload(resource_actions.get_geoserver_context(),
+                                                  resource_actions.get_context({'package_id':res['package_id']}),
+                                                  json.dumps(res))
+                    except:
+                        print ("Error adding %s, continuing" %res['package_id'])
+
 
     def add_wms_for_datastore(self, *args):
         pkg_id = args[0]
