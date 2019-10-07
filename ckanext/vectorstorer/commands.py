@@ -59,6 +59,8 @@ class VectorStorer(CkanCommand):
             self.add_datasets_from_json(*self.args[1:])
         elif cmd == "add_gwc_layers":
             self.add_gwc_layers(*self.args[1:])
+        elif cmd == "patch_wms_from_json":
+            self.patch_wms_from_json(*self.args[1:])
 
         else:
             print self.__doc__
@@ -132,15 +134,15 @@ class VectorStorer(CkanCommand):
         res_id = args[1]
 
         context = json.loads(resource_actions.get_context())
-        
+
         pkg = toolkit.get_action('package_show')(context, {'name_or_id': pkg_id})
         res = toolkit.get_action('resource_show')(context, {'id': res_id})
         context['package_id'] = pkg['id']
-        
+
         geoserver_context = json.loads(resource_actions.get_geoserver_context())
 
         tasks.add_wms(context, geoserver_context, res, 4326, pkg['name'])
-                    
+
     def add_wms_for_layer(self, *args):
         user = toolkit.get_action('get_site_user')({'ignore_auth': True,
                                                     'defer_commit': True}, {})
@@ -264,3 +266,41 @@ class VectorStorer(CkanCommand):
                 tasks.add_geowebcache_layer(wms.name_for_layer(layer))
             except Exception as msg:
                 print msg
+
+    def patch_wms_from_json(self, *args):
+        with open(args[0], 'r') as f:
+            # generated with
+            #  curl 'https://data.odm-eu.staging.derilinx.com/api/action/resource_search?query=format:WMS' > wms_layers.json
+            source = json.load(f)['result']['results']
+
+        PATCH_FIELDS = ('feature_info_template',
+                        'MD_DataIdentification_language',
+                        'name',
+                        'name_translated',
+                        'description',
+                        'description_translated')
+
+        user = toolkit.get_action('get_site_user')({'ignore_auth': True,
+                                                    'defer_commit': True}, {})
+        context = {'userobj': user, 'user': user['name']}
+
+        for resource in source:
+            layer = resource.get('wms_layer', None)
+            if not layer: continue
+            potential_matches = toolkit.get_action('package_search')(context, {'q': "%s" %layer.split(':')[-1],
+                                                                               'fq': 'res_format:WMS',
+            )}
+            for match in potential_matches['results']:
+                for match_resource in potential_matches['resources']:
+                    if layer == match_resource.get('wms_layer', None):
+                        print "Found layer match, updating: %s" % layer
+                        updates = {k: match_resource.get(k, None) for k in PATCH_FIELDS
+                                   if match_resource.get(k, None)}
+                        updates['id'] = resource['id']
+                        toolkit.get_action('resource_patch')(context, updates)
+                        break
+                else: # aka nobreak on the inner
+                    continue
+                break # if we did break, break out of the outer loop
+            else:
+                print "NOMATCH %s %s" %(layer, resource['id'])
