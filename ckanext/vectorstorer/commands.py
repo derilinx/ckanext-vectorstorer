@@ -287,6 +287,8 @@ class VectorStorer(CkanCommand):
         for resource in source:
             layer = resource.get('wms_layer', None)
             if not layer: continue
+
+            context = toolkit.get_action('get_site_user')({},{})
             potential_matches = toolkit.get_action('package_search')(context, {'q': "%s" %layer.split(':')[-1],
                                                                                'fq': 'res_format:WMS',
             )}
@@ -298,6 +300,7 @@ class VectorStorer(CkanCommand):
                                    if match_resource.get(k, None)}
                         updates['id'] = resource['id']
                         toolkit.get_action('resource_patch')(context, updates)
+                        model.Session.commit()
                         break
                 else: # aka nobreak on the inner
                     continue
