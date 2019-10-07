@@ -15,6 +15,8 @@ class VectorStorer(CkanCommand):
     Usage::
         paster vectorstorer add_wms [package_id]
            - Creates wms resources for existing geoserver shp/kml resources
+        paster vectorstorer add_wms_for_remote [package_id]
+           - Creates wms resources for existing (possibly remote) geojson/kml resources
         paster vectorstorer add_wms_for_layer package_id layer
            - Creates wms resources for existing geoserver layer
         paster vectorstorer add_wms_from_csv /path/to/csv
@@ -231,6 +233,10 @@ class VectorStorer(CkanCommand):
             #    context = toolkit.get_action('get_site_user')({},{})
             #    toolkit.get_action('package_patch')(context, {'id': pkg['id'],
             #                                                  'resources': []})
+
+            if pkg.get('private', False):
+                toolkit.get_action('package_patch')(context, {'id': pkg['id'],
+                                                              'private': False})
 
             for r in resources:
                 pkg_name = r[0].strip()

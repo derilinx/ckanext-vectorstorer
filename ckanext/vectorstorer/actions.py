@@ -51,7 +51,7 @@ def add_wms(context, data_dict):
     }
 
 
-    name = "Web Map Service in GeoServer"
+    name = res['name']
 
     wms_server = toolkit.config['ckanext-vectorstorer.geoserver_url'] + "/wms"
 
