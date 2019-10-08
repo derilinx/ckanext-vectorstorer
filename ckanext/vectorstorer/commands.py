@@ -268,17 +268,20 @@ class VectorStorer(CkanCommand):
                 print msg
 
     def patch_wms_from_json(self, *args):
+        from ckan import model
+
         with open(args[0], 'r') as f:
             # generated with
             #  curl 'https://data.odm-eu.staging.derilinx.com/api/action/resource_search?query=format:WMS' > wms_layers.json
             source = json.load(f)['result']['results']
 
-        PATCH_FIELDS = ('feature_info_template',
-                        'MD_DataIdentification_language',
-                        'name',
+        PATCH_JSON_FIELDS = ('MD_DataIdentification_language',
                         'name_translated',
-                        'description',
                         'description_translated')
+        PATCH_FIELDS = ('feature_info_template',
+                        'name',
+                        'description')
+
 
         user = toolkit.get_action('get_site_user')({'ignore_auth': True,
                                                     'defer_commit': True}, {})
@@ -291,14 +294,16 @@ class VectorStorer(CkanCommand):
             context = toolkit.get_action('get_site_user')({},{})
             potential_matches = toolkit.get_action('package_search')(context, {'q': "%s" %layer.split(':')[-1],
                                                                                'fq': 'res_format:WMS',
-            )}
+            })
             for match in potential_matches['results']:
-                for match_resource in potential_matches['resources']:
+                for match_resource in match['resources']:
                     if layer == match_resource.get('wms_layer', None):
                         print "Found layer match, updating: %s" % layer
-                        updates = {k: match_resource.get(k, None) for k in PATCH_FIELDS
-                                   if match_resource.get(k, None)}
-                        updates['id'] = resource['id']
+                        updates = {k: json.loads(resource.get(k, None)) for k in PATCH_JSON_FIELDS
+                                   if resource.get(k, None)}
+                        updates.update({k:resource.get(k, None) for k in PATCH_FIELDS
+                                   if resource.get(k, None)})
+                        updates['id'] = match_resource['id']
                         toolkit.get_action('resource_patch')(context, updates)
                         model.Session.commit()
                         break
