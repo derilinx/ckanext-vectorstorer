@@ -102,11 +102,11 @@ def _handle_resource(resource, db_conn_params, context, geoserver_context, WMS=N
         layer_count = _vector.get_layer_count()
         log.debug("Layer Count: %s" % layer_count)
         for layer_idx in range(0, layer_count):
-            if _selected_layers:
-                if str(layer_idx) in _selected_layers:
-                    _handle_vector(_vector, layer_idx, resource, context, geoserver_context, WMS=WMS, DB_TABLE=DB_TABLE)
-            else:
+            if (not _selected_layers) or (str(layer_idx) in _selected_layers):
                 _handle_vector(_vector, layer_idx, resource, context, geoserver_context, WMS=WMS, DB_TABLE=DB_TABLE)
+                # shp files really only have the one layer, and we're hardwiring to the one data-table
+                # so just do the first appropriate layer
+                break
 
     _delete_temp(resource_tmp_folder)
 
