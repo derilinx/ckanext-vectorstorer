@@ -71,7 +71,7 @@ class VectorStorer(CkanCommand):
         if len(args):
             packages = [toolkit.get_action('package_show')(context, {'id':args[0]})]
         else:
-            packages = toolkit.get_action('package_search')(context, {'q':'kml|shp|GeoJSON', 'rows':1000})['results']
+            packages = toolkit.get_action('package_search')(context, {'fq_list':['res_format:(KML OR SHP OR GeoJSON)'], 'rows':1000})['results']
             pkg_dict = dict([(p['id'], p) for p in packages])
 
         for pkg in pkg_dict.values():
