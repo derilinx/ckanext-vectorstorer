@@ -1,6 +1,6 @@
 from ckan.lib.cli import CkanCommand
 from ckan.plugins import toolkit
-
+import uuid
 import json
 import sys
 import csv
@@ -9,12 +9,23 @@ import tasks
 import wms
 from . import settings, resource_actions
 
+
+def is_valid_uuid(uuid_str):
+    try:
+        uuid.UUID(uuid_str)
+        return True
+    except ValueError:
+        print("Given argument is not uuid - ")
+        return False
+
 class VectorStorer(CkanCommand):
 
     """
     Usage::
         paster vectorstorer add_wms [package_id]
            - Creates wms resources for existing geoserver shp/kml resources
+        paster vectorstorer add_wms_for_remote [package_id]
+           - Creates wms resources for existing (possibly remote) shp/geojson/kml resources
         paster vectorstorer add_wms_for_layer package_id layer
            - Creates wms resources for existing geoserver layer
         paster vectorstorer add_wms_from_csv /path/to/csv
@@ -29,11 +40,12 @@ class VectorStorer(CkanCommand):
     paster --plugin=ckanext-vectorstorer vectorstorer add_wms
     1  paster --plugin=ckanext-vectorstorer vectorstorer add_wms_for_layer post-office-2018 "ODCambodia:Cambodia_post_office"
     2  paster --plugin=ckanext-vectorstorer vectorstorer add_wms_for_layer post-office-2018 "ODCambodia:Cambodia_post_office_kh"
-"""
+    """
 
     summary = __doc__.split('\n')[0]
     usage = __doc__
     min_args = 0
+
 
     def command(self):
         self._load_config()
@@ -46,7 +58,9 @@ class VectorStorer(CkanCommand):
         if cmd == "add_wms":
             self.add_wms(*self.args[1:])
         elif cmd == "add_wms_for_datastore":
-            self.add_wms_for_datastore(*self.args[1:])            
+            self.add_wms_for_datastore(*self.args[1:])
+        elif cmd == "add_wms_for_remote":
+            self.add_wms_for_remote(*self.args[1:])            
         elif cmd == "add_wms_for_layer":
             self.add_wms_for_layer(*self.args[1:])
         elif cmd == "add_wms_from_csv":
@@ -60,7 +74,6 @@ class VectorStorer(CkanCommand):
             print self.__doc__
             return
 
-
     def add_wms(self, *args):
         #geoserver_url = toolkit.config['ckanext-vectorstorer.geoserver_url']
         geoserver_url = '/geoserver'
@@ -68,9 +81,23 @@ class VectorStorer(CkanCommand):
                                                     'defer_commit': True}, {})
 
         context = {'userobj': user, 'user': user['name']}
+        _valid_formats = ('KML', 'SHP', 'GeoJSON')
         if len(args):
-            packages = [toolkit.get_action('package_show')(context, {'id':args[0]})]
+            if is_valid_uuid(args[0]):
+                # This verifies if the given argument is package id.
+                # Note: Package name as id is not valid.
+                packages = [toolkit.get_action('package_show')(context, {'id':args[0]})]
+            elif args[0] in _valid_formats:
+                print("Gathering packages for the format {}".format(args[0]))
+                packages = toolkit.get_action('package_search')(context, {'fq_list':['res_format:{}'.format(args[0])], 'rows':1000})['results']
+                pkg_dict = dict([(p['id'], p) for p in packages])
+            else:
+                # Empty dict - does not process further
+                pkg_dict = dict()
+                print("Given argument is not valid")
+               
         else:
+            # If no arguments given
             packages = toolkit.get_action('package_search')(context, {'fq_list':['res_format:(KML OR SHP OR GeoJSON)'], 'rows':1000})['results']
             pkg_dict = dict([(p['id'], p) for p in packages])
 
@@ -96,7 +123,57 @@ class VectorStorer(CkanCommand):
                     tasks.vectorstorer_upload(resource_actions.get_geoserver_context(),
                                               resource_actions.get_context({'package_id':res['package_id']}),
                                               json.dumps(res))
-                    
+
+    def add_wms_for_remote(self, *args):
+        #geoserver_url = toolkit.config['ckanext-vectorstorer.geoserver_url']
+        geoserver_url = '/geoserver'
+        user = toolkit.get_action('get_site_user')({'ignore_auth': True,
+                                                    'defer_commit': True}, {})
+
+        context = {'userobj': user, 'user': user['name']}
+        _valid_formats = ('KML', 'SHP', 'GeoJson')
+        if len(args):
+            if is_valid_uuid(args[0]):
+                # This verifies if the given argument is package id.
+                # Note: Package name as id is not valid.
+                packages = [toolkit.get_action('package_show')(context, {'id':args[0]})]
+            elif args[0] in _valid_formats:
+                print("Gathering packages for the format {}".format(args[0]))
+                packages = toolkit.get_action('package_search')(context, {'fq_list':['res_format:{}'.format(args[0])], 'rows':1000})['results']
+                pkg_dict = dict([(p['id'], p) for p in packages])
+            else:
+                # Empty dict - does not process further
+                pkg_dict = dict()
+                print("Given argument is not valid")
+
+        else:
+            packages = toolkit.get_action('package_search')(context, {'q':'SHP|KML|GeoJSON', 'rows':1000})['results']
+            pkg_dict = dict([(p['id'], p) for p in packages])
+
+        if args[0] in _valid_formats:
+            _format = (args[0])
+        else:
+            _format = ('KML', 'GeoJSON')
+
+        for pkg in pkg_dict.values():
+            print("%s, %s resources" %(pkg['name'], len(pkg['resources'])))
+
+            if any(res['format'] == settings.WMS_FORMAT for res in pkg['resources']):
+                print("found wms, continuing")
+                continue
+
+            for res in pkg['resources']:
+                #print res['format'], res['url']
+                if res['format'] in _format:
+                    print("Adding new Remote {}".format(_format))
+                    try:
+                        tasks.vectorstorer_upload(resource_actions.get_geoserver_context(),
+                                                  resource_actions.get_context({'package_id':res['package_id']}),
+                                                  json.dumps(res))
+                    except Exception as e:
+                        print(e)
+                        print ("Error adding %s, continuing" %res['package_id'])
+                
 
     def add_wms_for_datastore(self, *args):
         pkg_id = args[0]
