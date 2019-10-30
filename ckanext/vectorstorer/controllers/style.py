@@ -7,7 +7,7 @@ from ckan.lib.base import BaseController, c, request, \
                           response, session, render, config, abort
 from ckan.plugins import toolkit
 
-from . import settings
+from ckanext.vectorstorer import settings
 
 from geoserver.catalog import UploadError
 from ckan.logic import *
