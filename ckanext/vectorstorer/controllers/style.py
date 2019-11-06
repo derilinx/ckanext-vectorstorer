@@ -50,9 +50,22 @@ class StyleController(BaseController):
         self._get_context(id, resource_id)
         sld_body = request.POST.get('sld_body', '')
         if not sld_body:
-            abort(409, 'ValidationError, sld_body required in POST')
-        self._submit_sld(sld_body)
-        return render('style/edit_sld_form.html')
+            c.error = _('Validation Error:')+ " " +_('SLD Style required')
+            return render('style/edit_sld_form.html')
+        try:
+            sld_body = self._xml_pp(sld_body)
+        except:
+            c.error = _('Validation Error:') + " " +_('XML style is not valid')
+            c.sld_body = sld_body
+        else:
+            self._submit_sld(sld_body)
+        finally:
+            return render('style/edit_sld_form.html')
+
+    def _xml_pp(self, style):
+        parser = etree.XMLParser(remove_blank_text=True)
+        xml =  etree.fromstring(style, parser)
+        return etree.tostring(xml, pretty_print=True)
 
     def _get_layer_style(self,resource_id):
         cat = self._get_catalog()
@@ -65,9 +78,7 @@ class StyleController(BaseController):
         # and at the submit end, we need to convert to a utf-8 bytestream.
         # pretty printing with a better parser
         try:
-            parser = etree.XMLParser(remove_blank_text=True)
-            xml =  etree.fromstring(default_style.sld_body, parser)
-            return etree.tostring(xml, pretty_print=True)
+            return self._xml_pp(default_style.sld_body)
         except Exception as msg:
             # if it's not really valid XML
             log.error("Exception parsing style xml: %s", msg)
