@@ -30,7 +30,7 @@ class StyleController(BaseController):
     def create_form(self, id, resource_id):
         self._get_context(id, resource_id)
         return render('style/upload_sld_form.html')
-    
+
     def create(self, id, resource_id):
         self._get_context(id, resource_id)
         sld_file_param = request.POST['sld_file']
@@ -74,14 +74,22 @@ class StyleController(BaseController):
         if not layer:
             abort(404, "Could not retrieve layer")
         default_style=layer._get_default_style()
-        # UNDONE -- don't pretty print here.
         # Need to encode/decode the xml, as xml is actually a bytestream,
         # and at the submit end, we need to convert to a utf-8 bytestream.
-        #return default_style.sld_body.decode('utf-8')
         # pretty printing with a better parser
-        parser = etree.XMLParser(remove_blank_text=True)
-        xml =  etree.fromstring(default_style.sld_body, parser)
-        return etree.tostring(xml, pretty_print=True)
+        try:
+            parser = etree.XMLParser(remove_blank_text=True)
+            xml =  etree.fromstring(default_style.sld_body, parser)
+            return etree.tostring(xml, pretty_print=True)
+        except Exception as msg:
+            # if it's not really valid XML
+            log.error("Exception parsing style xml: %s", msg)
+            try:
+                return default_style.sld_body.decode('utf-8')
+            except Exception as msg:
+                # If it's not really UTF-8
+                log.error("Exception decoding UTF8: %s", msg)
+                return "<!-- Style is corrypt, please replace --!>"
 
     def _get_context(self,id,resource_id):
         context = {'model': model, 'session': model.Session,
@@ -122,11 +130,11 @@ class StyleController(BaseController):
             log.debug('default style name: %s' % default_style.name)
             if default_style.name == layer_name:
                 log.debug('is default style, updating default style')
-                # need to be encoding here. 
+                # need to be encoding here.
                 cat.create_style(default_style.name, sld_body.encode('utf-8'), overwrite=True, workspace=workspace, raw=True)
             else:
                 log.debug('creating a style for layer')
-                # need to be encoding here. 
+                # need to be encoding here.
                 cat.create_style(layer_name, sld_body.encode('utf-8'), overwrite=True, workspace=workspace, raw=True)
                 log.debug('setting the default style')
                 layer._set_default_style(layer_name)
