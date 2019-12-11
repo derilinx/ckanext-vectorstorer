@@ -7,7 +7,7 @@
     <h3>Upload an SLD XML File</h3>
 
     {% block sld_file_upload %}
-	<form action="{{h.url_for(controller=style_controller, action='upload_sld' ,id=c.pkg.id,resource_id=c.resource.id,operation='upload')}}" method="post" accept-charset="utf-8"
+	<form action="{{h.url_for('vectorstorer_style', action='create', id=c.pkg.id, resource_id=c.resource.id)}}" method="post" accept-charset="utf-8"
 	    enctype="multipart/form-data">
 	    <input id="file" name="sld_file" accept="*/xml" type="file" value="" />
 	    <br> <br>
@@ -36,7 +36,7 @@
     {% endif %}
     
     {% if c.sld_body %}
-	{% snippet 'style/snippets/sld_editor.html', action='upload_sld',id=c.pkg.id,resource_id=c.resource.id,sld_body=c.sld_body %}
+	{% snippet 'style/snippets/sld_editor.html', action='edit',id=c.pkg.id,resource_id=c.resource.id,sld_body=c.sld_body %}
     {% endif %}
   
 

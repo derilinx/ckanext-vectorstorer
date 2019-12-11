@@ -1,7 +1,6 @@
 {% extends "package/resource_read.html" %}
 
 {% set res = c.resource %}
-{% set style_controller = 'ckanext.vectorstorer.controllers.style:StyleController' %}
 
 {% block breadcrumb_content %}
 {% if pkg %}
@@ -14,46 +13,38 @@
       <li>{% link_for _('Datasets'), controller='package', action='search' %}</li>
     {% endif %}
     <li{{ self.breadcrumb_content_selected() }}>{% link_for dataset|truncate(30), controller='package', action='read', id=pkg.name %}</li>
-     <li class="active"> <a href="{{ h.url_for(controller='package', action='resource_read',id=c.pkg.id,resource_id=c.resource.id) }}" >{{res.name}}</li>
+    <li class="active"> <a href="{{ h.url_for(controller='package', action='resource_read',id=c.pkg.id,resource_id=c.resource.id) }}" >{{res.name}}</li>
   {% else %}
     <li>{% link_for _('Datasets'), controller='package', action='search' %}</li>
     <li class="active"><a href="">{{ _('Create Dataset') }}</a></li>
   {% endif %}
-       
+
 {% endblock %}
 
+{% block reqd_secondary %}true{% endblock %}
 {% block secondary_content %}
-  <h2 class="module-heading"><i class="icon-medium icon-magic"></i> Styling</h2>
+  <h2 class="module-heading"><i class="icon-medium icon-magic"></i>{{_('Styling')}}</h2>
   <ul class="nav nav-simple">
       <li class="nav-item">
-	  <a href="{{ h.url_for(controller=style_controller, action='edit_current_sld',id=c.pkg.id,resource_id=c.resource.id,operation='show') }}" title="{{ _('Edit settings') }}">
-	    <span>Edit current Style</span>
+          <a href="{{ h.url_for('vectorstorer_style', action='show',id=c.pkg.id,resource_id=c.resource.id) }}" title="{{ _('Edit settings') }}">
+              <span>{{_('Edit Current Style')}}</span>
           </a>
-     
       </li>
       <li class="nav-item">
-	  <a href="{{ h.url_for(controller=style_controller, action='upload_sld',id=c.pkg.id,resource_id=c.resource.id,operation='show') }}" title="{{ _('Edit settings') }}">
-             <span>Upload a SLD file</span>
-          </a>
-      </li>
-       <li class="nav-item">
-	  <a href="{{ h.url_for(controller='package', action='resource_read',id=c.pkg.id,resource_id=c.resource.id) }}" >
-             <span>Back to Resource Preview</span>
+          <a href="{{ h.url_for('vectorstorer_style', action='create_form', id=c.pkg.id, resource_id=c.resource.id) }}" title="{{ _('Edit settings') }}">
+              <span>{{_('Upload an SLD file')}}</span>
           </a>
       </li>
   </ul>
-  
+{% endblock %}
+
+{% block resource_view %}
 {% endblock %}
 
 {% block primary_content %}
-
-
-  {% block sld_actions %} 
- 
-   {% endblock %}
-  
+  {% block sld_actions %}
+  {% endblock %}
 {% endblock %}
-
   
  
  
