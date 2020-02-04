@@ -36,7 +36,7 @@
         </a>
       </li>
       <li>
-        <a href="{{ res.url }}" class="resource-url-analytics" target="_blank">
+        <a href="{{ res.url }}" resource_id="{{res.id}}" class="resource-url-analytics" target="_blank">
           {% if res.can_be_previewed %}
             <i class="icon-download"></i>
             {{ _('Download') }}
