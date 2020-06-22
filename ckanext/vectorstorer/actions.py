@@ -1,16 +1,87 @@
 from ckan.plugins import toolkit
-
 from .tasks import identify_resource, add_wms_resource
+from ckan.common import config
+from ckanext.vectorstorer import helper as v_hlp
 from . import wms
-
+from geoserver.catalog import Catalog
+import ckan.logic as logic
 import urlparse
 import requests
 
 import logging
 log = logging.getLogger(__name__)
 
-# update resource set url= replace(url, 'https://data2.odc.staging.derilinx.com', 'http://odt.localhost') where url like 'https://data2.odc.staging.derilinx.com/geoserver%'
-# update resource set url= replace(url, 'https://data2.odc.staging.derilinx.com', 'https://data2.odt.staging.derilinx.com') where url like 'https://data2.odc.staging.derilinx.com/geoserver%'
+ValidationError = logic.ValidationError
+
+
+def create_resource_given_wms_layer(resource):
+    """
+    Check of layer_name giben in resource dict
+
+    Condition:
+
+    - Resource should not have url selected
+    - Resource format should be wms
+    - Resource should not have vectorstorer_resource (means no db table should be associated with it)
+    - Check for a valid layer_name in geoserver for a given workspace.
+
+    :param resource: dict
+    :return: dict
+    """
+
+    _resource_format = resource.get('format', '').lower().strip()
+    _workspace = config['ckanext-vectorstorer.geoserver_workspace']
+    layer_name = resource.get('odm_geoserver_layer_name', '')
+
+    if _resource_format == "wms" and resource.get('odm_geoserver_layer_name', ''):
+        if resource.get('vectorstorer_resource', ''):
+            # This means wms is updated and there is already a db table associated with it.
+            raise ValidationError("WMS resources is associated with DB table cannot change layer name. "
+                                  "Please create a new resource")
+        else:
+            resource['wms_layer'] = "{}:{}".format(_workspace, layer_name)
+            resource['vectorstorer_resource'] = ""
+            resource['wms_server'] = config['ckanext-vectorstorer.geoserver_url'] + "/wms"
+            resource['layer_url'] = v_hlp.generate_wms_url(layer_name, _workspace)
+            resource['url'] = v_hlp.generate_wms_url(layer_name, _workspace)
+
+    if _resource_format != "wms" and resource.get('odm_geoserver_layer_name', ''):
+        raise ValidationError(["You have given Layer Name but file format is not wms."
+                               "Please select format as wms if you are trying to add wms layer."])
+
+    return resource
+
+
+def update_resource_given_wms_layer(current, resource):
+    """
+    Update wms resource
+    :param current: dict existing resource (previous one)
+    :param resource: new updated resource dict
+    :return: dict
+    """
+
+    _del_keys = (
+        "wms_layer",
+        "vectorstorer_resource",
+        "wms_server",
+        "layer_url"
+    )
+
+    # If layer name given then update the resource
+    if resource.get('odm_geoserver_layer_name', ''):
+        return create_resource_given_wms_layer(resource)
+
+    # Edge case
+    # If resource format is WMS and the URL is changed from the previous resource and doesnt contain layer_name
+    # This means its external WMS url. Rarely occurs but possible
+    if current.get('url') != resource.get('url') and resource.get('format', '').strip().lower() == "wms":
+        for _key in _del_keys:
+            try:
+                del resource[_key]
+            except KeyError:
+                pass
+    return resource
+
 
 def add_wms(context, data_dict):
     """

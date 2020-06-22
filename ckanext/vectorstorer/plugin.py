@@ -4,10 +4,13 @@ from ckan import model,logic
 from ckan.lib.base import abort
 from ckan.common import _
 import ckan
+from ckanext.vectorstorer import helper as v_hlp
 from . import settings, resource_actions, actions
-
-
+from ckanext.vectorstorer import validators
 from ckan.common import config
+import logging
+
+log = logging.getLogger(__name__)
 
 def isInVectorStore(package_id, resource_id):
     parent_resource = {}
@@ -37,11 +40,21 @@ class VectorStorer(SingletonPlugin):
     implements(plugins.ITemplateHelpers)
     implements(plugins.IDomainObjectModification, inherit=True)
     implements(plugins.IActions)
+    implements(plugins.IResourceController, inherit=True)
+    implements(plugins.IValidators)
+
+    #  IValidators
+    def get_validators(self):
+        return {
+            'vectorstore_check_if_layer_is_valid': validators.check_if_layer_is_valid,
+        }
 
     def get_helpers(self):
         return {
             'vectorstore_is_in_vectorstore': isInVectorStore,
-            'vectorstore_supported_format': supportedFormat
+            'vectorstore_supported_format': supportedFormat,
+            'vectorstore_show_resource_add_wms_forms': v_hlp.vectorstore_show_resource_add_wms_forms,
+            'vectorstore_get_workspace': v_hlp.vectorstore_get_workspace
         }
 
     def configure(self, config):
@@ -149,3 +162,24 @@ class VectorStorer(SingletonPlugin):
             'vectorstorer_add_wms_for_layer': actions.add_wms_for_layer,
             'vectorstorer_spatial_metadata_for_resource': actions.spatial_metadata_for_resource,
         }
+
+    # Resource Controller
+    def before_create(self, context, resource):
+        """
+        Before resource create check for layer_name and workspace given. if given generate new url referencing this
+        layer in geoserver.
+        :return: dict
+        """
+        resource = actions.create_resource_given_wms_layer(resource)
+
+        return resource
+
+    def before_update(self, context, current, resource):
+        """
+        Before resource update check for layer_name and workspace given. if given generate new url referencing this
+        layer in geoserver.
+        :return: dict
+        """
+        resource = actions.update_resource_given_wms_layer(current, resource)
+
+        return current, resource
