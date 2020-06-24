@@ -236,14 +236,17 @@ def _handle_vector(_vector, layer_idx, resource, context, geoserver_context, WMS
         if not _vector.preflight_layer(layer):
             log.error('Resource does not have appropriate geom column, skipping')
             return False
-        
+
         if DB_TABLE:
             created_db_table_resource = DB_TABLE[0]
         else:
             created_db_table_resource = _add_db_table_resource(context, resource, geom_name, layer_name)
         layer = _vector.get_layer(layer_idx)
         _vector.handle_layer(layer, geom_name, created_db_table_resource['id'].lower())
-        if not WMS:
+        if WMS:
+            layer_name = WMS[0]['wms_layer'].split(':')[-1]
+            update_layer(geoserver_context, created_db_table_resource, epsg_to_wkt(srs_epsg), layer_name)
+        else:
             add_wms(context, geoserver_context, created_db_table_resource, srs_epsg, layer_name)
         if not DB_TABLE:
             try:
@@ -322,10 +325,64 @@ def _is_shapefile(res_folder_path):
         return (False, None, False)
 
 def _check_layer(geoserver_context, layer_name):
-    url = ('%(geoserver_url)s/rest/workspaces/%(geoserver_workspace)s/datastores/%(geoserver_ckan_datastore)s/featuretypes/' % geoserver_context) + layer_name
-    resp = requests.get(url, auth=(geoserver_context['geoserver_admin'], geoserver_context['geoserver_password']))
-    return resp.status_code == 200
-    
+    return _fetchFeatureType(geoserver_context, layer_name).status_code == 200
+
+def _featureTypeUrl(geoserver_context, layer_name=''):
+    return ('%(geoserver_url)s/rest/workspaces/%(geoserver_workspace)s/datastores/%(geoserver_ckan_datastore)s/featuretypes/' % geoserver_context) + layer_name
+
+def _fetchFeatureType(geoserver_context, layer_name):
+    url = _featureTypeUrl(geoserver_context, layer_name)
+    log.debug('feature url: %s', url)
+    return requests.get(url+".json", auth=(geoserver_context['geoserver_admin'], geoserver_context['geoserver_password']))
+
+def fetchFeatureType(geoserver_context, layer_name):
+    return _fetchFeatureType(geoserver_context, layer_name).json()
+
+def update_layer(geoserver_context, resource, srs_wkt, layer_name):
+    log.debug('updating layer for %s' % resource['name'])
+    geoserver_admin = geoserver_context['geoserver_admin']
+    geoserver_password = geoserver_context['geoserver_password']
+    resource_id = resource['id'].lower()
+    resource_name = resource['name']
+    resource_description = resource['description']
+    url = _featureTypeUrl(geoserver_context, layer_name)
+    data = """<featureType>
+                 <name>%s</name>
+                 <nativeName>%s</nativeName>
+                 <title>%s</title>
+                 <abstract>%s</abstract>
+                 <nativeCRS>%s</nativeCRS>
+              </featureType>""" % (
+        escape(layer_name),
+        escape(resource_id),
+        escape(resource_name),
+        escape(resource_description),
+        escape(srs_wkt))
+    # data = fetchFeatureType(geoserver_context, layer_name)['featureType']
+    # data['nativeName'] = resource_id
+    # data['nativeCrs'] = srs_wkt
+    # try:
+    #     del(data['attributes'])
+    # except: pass
+    log.debug("sending layer to geoserver: %s "% url)
+    log.debug("sending layer to geoserver: %s "% data)
+    try:
+        res = requests.put(url,
+                           params={'recalculate':'nativebbox,latlonbbox'},
+                           headers={'Content-type': 'application/xml'},
+                           auth=(geoserver_admin, geoserver_password),
+                           data=data,
+                           timeout=10)
+        res.raise_for_status()
+    except requests.HTTPError as msg:
+        log.debug("Exception posting to geoserver: %s" %str(msg))
+        raise
+    except Exception as msg:
+        log.debug("Other Exception posting to geoserver: %s" %str(msg))
+        raise
+    log.debug("sent layer to geoserver")
+
+
 def _publish_layer(geoserver_context, resource, srs_wkt, layer_name):
     log.debug('publishing layer for %s' % resource['name'])
     geoserver_url = geoserver_context['geoserver_url']
@@ -339,7 +396,7 @@ def _publish_layer(geoserver_context, resource, srs_wkt, layer_name):
     if DBTableResource.name_extention in resource_name:
         resource_name = resource_name.replace(DBTableResource.name_extention, '')
     resource_description = resource['description']
-    url = geoserver_url + '/rest/workspaces/' + geoserver_workspace + '/datastores/' + geoserver_ckan_datastore + '/featuretypes'
+    url = _featureTypeUrl(geoserver_context)
     data = """<featureType>
                  <name>%s</name>
                  <nativeName>%s</nativeName>
