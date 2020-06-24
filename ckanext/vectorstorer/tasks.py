@@ -8,14 +8,17 @@ import vector
 import shutil
 import random
 from xml.sax.saxutils import escape
-from db_helpers import DB
 from pyunpack import Archive
 from geoserver.catalog import Catalog
-from resources import *
 import ckan.plugins.toolkit as toolkit
 from ckanext.vectorstorer import settings
 import cgi
+from ckan.lib import redis
+from contextlib import contextmanager
 
+from db_helpers import DB
+from resources import *
+import resource_actions
 from . import wms
 
 from ckan.common import config
@@ -28,6 +31,23 @@ RESOURCE_CREATE_DEFAULT_VIEWS_ACTION = 'resource_create_default_resource_views'
 RESOURCE_CREATE_ACTION = 'resource_create'
 RESOURCE_UPDATE_ACTION = 'resource_update'
 RESOURCE_DELETE_ACTION = 'resource_delete'
+
+class ResourceConflictException(Exception): pass
+
+@contextmanager
+def lock(rid):
+    key = "vectorstorer:r:%s" % rid
+    conn = redis.connect_to_redis()
+    try:
+        res = conn.setnx(key, rid)
+        if not res:
+            raise ResourceConflictException("Resource is locked")
+        conn.expire(key, 300)
+        yield
+    finally:
+        if conn.get(key) == rid:
+            conn.delete(key)
+
 
 def identify_resource(data,user_api_key):
     resource = json.loads(data)
@@ -67,10 +87,14 @@ def _identify(resource,user_api_key):
 def vectorstorer_upload(geoserver_cont, cont, data):
     log.debug("task: vectorstorer_upload")
     resource = json.loads(data)
-    context = json.loads(cont)
-    geoserver_context = json.loads(geoserver_cont)
-    db_conn_params = context['db_params']
-    _handle_resource(resource, db_conn_params, context, geoserver_context)
+    with lock(resource['id']):
+        if len(resource_actions.get_child_resources(resource)):
+            log.error("Race Condition: Attempting to upload new WMS resource with existing child resources")
+            return
+        context = json.loads(cont)
+        geoserver_context = json.loads(geoserver_cont)
+        db_conn_params = context['db_params']
+        _handle_resource(resource, db_conn_params, context, geoserver_context)
 
 
 def _handle_resource(resource, db_conn_params, context, geoserver_context, WMS=None, DB_TABLE=None):
@@ -375,36 +399,39 @@ def _update_resource_metadata(context, resource):
 def vectorstorer_update(geoserver_cont, cont, data):
     log.debug('resource update')
     resource = json.loads(data)
-    context = json.loads(cont)
-    geoserver_context = json.loads(geoserver_cont)
-    db_conn_params = context['db_params']
-    resource_ids = context['resource_list_to_delete']
-    resources = [ _api_resource_action(context, {'id':res_id }, 'resource_show') for res_id in resource_ids ]
-    if not resources: return
+    with lock(resource['id']):
+        context = json.loads(cont)
+        geoserver_context = json.loads(geoserver_cont)
+        db_conn_params = context['db_params']
+        resource_ids = context['resource_list_to_update']
+        resources = [ _api_resource_action(context, {'id':res_id }, 'resource_show') for res_id in resource_ids ]
+        if not resources: return
 
-    DB_TABLE = [r for r in resources if r['format'] == settings.DB_TABLE_FORMAT]
-    WMS = [r for r in resources if r['format'] == settings.WMS_FORMAT]
+        DB_TABLE = [r for r in resources if r['format'] == settings.DB_TABLE_FORMAT]
+        WMS = [r for r in resources if r['format'] == settings.WMS_FORMAT]
+        if not (WMS and DB_TABLE): return
 
-    _handle_resource(resource, db_conn_params, context, geoserver_context, WMS=WMS, DB_TABLE=DB_TABLE)
+        _handle_resource(resource, db_conn_params, context, geoserver_context, WMS=WMS, DB_TABLE=DB_TABLE)
 
 
 def vectorstorer_delete(geoserver_cont, cont, data):
     log.debug('resource delete')
     resource = json.loads(data)
-    context = json.loads(cont)
-    geoserver_context = json.loads(geoserver_cont)
-    db_conn_params = context['db_params']
-    res_format = resource.get('format', None)
-    if res_format == settings.DB_TABLE_FORMAT:
-            _delete_from_datastore(resource['id'], db_conn_params, context)
-    elif res_format == settings.WMS_FORMAT:
-            _unpublish_from_geoserver(resource['parent_resource_id'], geoserver_context)
-    resource_ids = context['resource_list_to_delete']
-    if resource_ids:
+    with lock(resource['id']):
+        context = json.loads(cont)
+        geoserver_context = json.loads(geoserver_cont)
+        db_conn_params = context['db_params']
+        res_format = resource.get('format', None)
+        if res_format == settings.DB_TABLE_FORMAT:
+                _delete_from_datastore(resource['id'], db_conn_params, context)
+        elif res_format == settings.WMS_FORMAT:
+                _unpublish_from_geoserver(resource['parent_resource_id'], geoserver_context)
         resource_ids = context['resource_list_to_delete']
-        for res_id in resource_ids:
-            res = {'id': res_id}
-            _api_resource_action(context, res, RESOURCE_DELETE_ACTION)
+        if resource_ids:
+            resource_ids = context['resource_list_to_delete']
+            for res_id in resource_ids:
+                res = {'id': res_id}
+                _api_resource_action(context, res, RESOURCE_DELETE_ACTION)
 
 
 def _delete_from_datastore(resource_id, db_conn_params, context):
