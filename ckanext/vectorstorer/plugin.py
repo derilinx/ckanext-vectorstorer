@@ -17,12 +17,9 @@ def isInVectorStore(package_id, resource_id):
     parent_resource['package_id'] = package_id
     parent_resource['id'] = resource_id
 
-    child_resources = resource_actions._get_child_resources(parent_resource)
+    child_resources = resource_actions.get_child_resources(parent_resource)
 
-    if len(child_resources) > 0:
-        return True
-    else:
-        return False
+    return len(child_resources) > 0
 
 def supportedFormat(format):
     return format.lower() in settings.SUPPORTED_DATA_FORMATS

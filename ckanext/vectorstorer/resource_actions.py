@@ -11,6 +11,7 @@ from ckan.common import config
 from ckanext.vectorstorer import settings
 from ckanext.vectorstorer import tasks
 from ckanext.publicamundi.model.resource_identify import ResourceIdentify
+import itertools
 
 import logging
 log = logging.getLogger(__name__)
@@ -99,10 +100,10 @@ def delete_vector_storer_task(resource, pkg_delete = False):
     if resource['format'] in (settings.WMS_FORMAT, settings.DB_TABLE_FORMAT) and resource.has_key('vectorstorer_resource'):
         data = json.dumps(resource)
         if pkg_delete:
-            resource_list_to_delete = _get_child_resources(resource)
+            resource_list_to_delete = get_child_resources(resource)
     else:
         data = json.dumps(resource)
-        resource_list_to_delete = _get_child_resources(resource)
+        resource_list_to_delete = get_child_resources(resource)
     context = get_context({'resource_list_to_delete': resource_list_to_delete})
     geoserver_context = get_geoserver_context()
     jobs.enqueue(tasks.vectorstorer_delete, [geoserver_context, context, data])
@@ -115,12 +116,20 @@ def _temp_context():
             'user': _get_site_user().get('name')}
 
 def _delete_child_resources(parent_resource):
-    for child_resource in _get_child_resources(parent_resource):
+    for child_resource in get_child_resources(parent_resource):
         action_result = logic._actions['resource_delete'](_temp_context(), {'id': child_resource })
 
-def _get_child_resources(parent_resource):
+def get_child_resources(parent_resource):
     package = get_action('package_show')(_temp_context(), {'id': parent_resource['package_id']})
-    return [r['id'] for r in package['resources'] if r.get('parent_resource_id','') == parent_resource['id']]
+    # Parent resource ids are actually a tree. Orig->DbTable->WMS
+    # These might be in a different order, so shake the tree twice to find
+    # all the children of this resource
+    ids = {parent_resource['id']}
+    for r in itertools.chain(package['resources'], package['resources']):
+        if r.get('parent_resource_id','') in ids:
+            ids.add(r['id'])
+    ids.remove(parent_resource['id'])
+    return list(ids)
 
 
 def pkg_delete_vector_storer_task(package):
