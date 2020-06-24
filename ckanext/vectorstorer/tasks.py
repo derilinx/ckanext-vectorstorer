@@ -7,6 +7,8 @@ import json
 import vector
 import shutil
 import random
+import tempfile
+
 from xml.sax.saxutils import escape
 from pyunpack import Archive
 from geoserver.catalog import Catalog
@@ -170,10 +172,9 @@ def _get_gdalDRV_filepath(resource, resource_tmp_folder,file_path):
 
 
 def _download_resource(resource,user_api_key):
-    resource_tmp_folder = settings.TMP_FOLDER + str(random.randint(1, 1000)) + resource['id'] + '/'
+    resource_tmp_folder = tempfile.mkdtemp()
     file_name= None
 
-    os.makedirs(resource_tmp_folder)
     resource_url = urllib2.unquote(resource['url'])
 
     if resource['url_type']:
@@ -182,19 +183,17 @@ def _download_resource(resource,user_api_key):
         request = urllib2.Request(resource_url)
         request.add_header('Authorization', user_api_key)
         resource_download_request = urllib2.urlopen(request)
-        downloaded_resource = open( file_name, 'wb')
-        downloaded_resource.write(resource_download_request.read())
-        downloaded_resource.close()
+        with open( file_name, 'wb') as f:
+            f.write(resource_download_request.read())
 
-    else :
+    else:
         #Handle urls here
         resource_download_request = urllib2.urlopen(resource_url)
         _, params = cgi.parse_header(resource_download_request.headers.get('Content-Disposition', ''))
         filename = params['filename']
         file_name = filename
-        downloaded_resource = open(resource_tmp_folder + filename, 'wb')
-        downloaded_resource.write(resource_download_request.read())
-        downloaded_resource.close()
+        with open(os.path.join(resource_tmp_folder , filename), 'wb') as f:
+            f.write(resource_download_request.read())
 
     return resource_tmp_folder, file_name
 
@@ -203,7 +202,7 @@ def _get_tmp_file_path(resource_tmp_folder, resource):
     resource_url = urllib2.unquote(resource['url']).decode('utf8')
     url_parts = resource_url.split('/')
     resource_file_name = url_parts[len(url_parts) - 1]
-    file_path = resource_tmp_folder + resource_file_name
+    file_path = os.path.join(resource_tmp_folder, resource_file_name)
     return file_path
 
 def epsg_to_wkt(epsg):
