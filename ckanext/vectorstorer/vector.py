@@ -65,8 +65,11 @@ class Vector:
             return False
         layer.ResetReading()
         # create_table is now safe to use in a data-reload context
+        log.debug('creating or updating db table %s', table_name)
         self._db.create_table(table_name, fields, geom_name, srs, coordinate_dimension)
+        log.debug('writing database table %s', table_name)
         self.write_to_db(table_name, layer, srs, geom_name)
+        log.debug('wrote database table %s', table_name)
         return True
 
     def get_SRS(self, layer):
@@ -200,6 +203,7 @@ class Vector:
                 convert_to_multi = self.needs_conversion_to_multi(feat, layer_geom_name)
             self._db.insert_to_table(table_name, feature_fields, feat.GetGeometryRef(), convert_to_multi, srs)
 
+        log.debug('wrote %s features to database', i)
         self._db.create_spatial_index(table_name)
         self._db.commit_and_close()
 

@@ -112,7 +112,7 @@ def _handle_resource(resource, db_conn_params, context, geoserver_context, WMS=N
 
 
 def _get_gdalDRV_filepath(resource, resource_tmp_folder,file_path):
-    log.debug("_get_gdalDrv_filepath")
+    log.debug("_get_gdalDrv_filepath: resource: %s", resource['id'])
     resource_format = resource['format'].lower()
     _gdal_driver = None
     _file_path = os.path.join(resource_tmp_folder,file_path)
