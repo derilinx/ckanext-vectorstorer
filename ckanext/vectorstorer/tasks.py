@@ -228,9 +228,8 @@ def _handle_vector(_vector, layer_idx, resource, context, geoserver_context, WMS
             if _check_layer(geoserver_context, layer_name):  # name hit
                 # Try the package name
                 pkg = toolkit.get_action('package_show')(context,{'id': resource['package_id']})
-                if not _check_layer(geoserver_context, pkg['name']):
-                    layer_name = pkg['name']
-                else:
+                layer_name = pkg['name'].replace('/',' ')
+                if _check_layer(geoserver_context, pkg['name']):
                     # Or, just use the resource name
                     layer_name = resource['id']
 
