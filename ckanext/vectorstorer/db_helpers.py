@@ -31,7 +31,7 @@ class DB:
             field_info = self.cursor.fetchall()
             self.drop_table(table_name)
 
-        self.cursor.execute("CREATE TABLE \"%s\" (_id serial PRIMARY KEY, %s);"%(table_name, fin))
+        self.cursor.execute("CREATE TABLE \"%s\" (_id serial PRIMARY KEY, %s);"%(table_name, fin.decode('utf-8')))
         self.cursor.execute("SELECT AddGeometryColumn ('%s','the_geom',%s,'%s',%s);"%(table_name,
                                                                                       srs,
                                                                                       geometry,
@@ -43,15 +43,15 @@ class DB:
         comment = """comment on column "%s"."%s" is %%s"""
         for field, info in field_info:
             if field in fin:
-                self.cursor.execute(comment % (table_name, field), (info,))
+                self.cursor.execute(comment % (table_name, field.decode('utf-8')), (info.decode('utf-8'),))
 
 
 
     def insert_to_table(self,table,fields,geometry_text,convert_to_multi,srs):
         if convert_to_multi:
-            insert=("INSERT INTO \"%s\" VALUES (%s ST_Multi(ST_GeomFromText('%s',%s)));"%(table,fields,geometry_text,srs))
+            insert=("INSERT INTO \"%s\" VALUES (%s ST_Multi(ST_GeomFromText('%s',%s)));"%(table,fields.encode('utf-8').decode('utf-8'),geometry_text,srs))
         else:
-            insert=("INSERT INTO \"%s\" VALUES (%s ST_GeomFromText('%s',%s));"%(table,fields,geometry_text,srs))
+            insert=("INSERT INTO \"%s\" VALUES (%s ST_GeomFromText('%s',%s));"%(table,fields.encode('utf-8').decode('utf-8'),geometry_text,srs))
         self.cursor.execute(insert)
 
     def create_spatial_index(self,table):
