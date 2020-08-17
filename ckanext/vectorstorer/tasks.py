@@ -137,7 +137,7 @@ def _handle_resource(resource, db_conn_params, context, geoserver_context, WMS=N
     _delete_temp(resource_tmp_folder)
 
 
-def _get_gdalDRV_filepath(resource, resource_tmp_folder,file_path):
+def _get_gdalDRV_filepath(resource, resource_tmp_folder, file_path):
     log.debug("_get_gdalDrv_filepath: resource: %s", resource['id'])
     resource_format = resource['format'].lower()
     _gdal_driver = None
@@ -148,7 +148,9 @@ def _get_gdalDRV_filepath(resource, resource_tmp_folder,file_path):
 
     if resource_format == 'shp' or resource_format in settings.ARCHIVE_FORMATS:
         Archive(_file_path).extractall(resource_tmp_folder)
-        is_shp, _file_path, prj_exists = _is_shapefile(resource_tmp_folder)
+        log.debug('Resource temp folder: %s', resource_tmp_folder)
+        log.debug('File Path: %s', _file_path)
+        is_shp, _file_path, prj_exists = _is_shapefile(resource_tmp_folder, file_path=file_path)
         if is_shp:
             _gdal_driver = vector.SHAPEFILE
     elif resource_format == 'kml':
@@ -302,11 +304,19 @@ def _delete_temp(res_tmp_folder):
     shutil.rmtree(res_tmp_folder)
 
 
-def _is_shapefile(res_folder_path):
+def _is_shapefile(res_folder_path, file_path=None):
     shp_exists = False
     shx_exists = False
     dbf_exists = False
     prj_exists = False
+    log.debug(os.listdir(res_folder_path))
+
+    if file_path:
+        file_name = os.path.split(file_path)[-1]
+        folder_name = os.path.splitext(file_name)[0]
+        if folder_name in os.listdir(res_folder_path):
+            res_folder_path = os.path.join(res_folder_path, folder_name)
+
     for f in os.listdir(res_folder_path):
         lower, ext = os.path.splitext(f.lower())
         if ext == '.shp':
