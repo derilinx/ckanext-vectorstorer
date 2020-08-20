@@ -11,8 +11,6 @@ from osgeo import ogr, osr
 osr.UseExceptions()
 ogr.UseExceptions()
 
-from . import resources
-
 db_encoding='utf-8'
 TMP_FOLDER='/tmp/vectorstorer/'
 
@@ -43,5 +41,5 @@ ARCHIVE_FORMATS=[
 
 WMS_VECTORSTORER_RESOURCE=u'vectorstorer_wms'
 DB_TABLE_RESOURCE=u'vectorstorer_db'
-WMS_FORMAT=resources.WMSResource._format
-DB_TABLE_FORMAT=resources.DBTableResource._format
+WMS_FORMAT=u'WMS'
+DB_TABLE_FORMAT=u'DB_TABLE'

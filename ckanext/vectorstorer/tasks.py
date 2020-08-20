@@ -271,8 +271,7 @@ def _add_db_table_resource(context, resource, geom_name, layer_name):
                                         "Datastore resource derived from \"" + layer_name + "\" in [this resource](" + resource['id'] + "), available in CKAN and GeoServer Store",
                                         resource['id'],
                                         'http://_datastore_only_resource',
-                                        geom_name,
-                                        json.loads(resource.get('MD_DataIdentification_language','[]'))
+                                        geom_name
     )
     db_res_as_dict = db_table_resource.get_as_dict()
     created_db_table_resource = _api_resource_action(context, db_res_as_dict, RESOURCE_CREATE_ACTION)
@@ -292,8 +291,7 @@ def _add_wms_resource(context, layer_name, parent_resource, wms_server, wms_laye
                                "WMS publishing of the GeoServer layer \"" + layer_name + "\" stored in [this resource](" + parent_resource['id']  + ")",
                                parent_resource['id'],
                                wms_server,
-                               wms_layer,
-                               parent_resource.get('MD_DataIdentification_language','')
+                               wms_layer
     )
     wms_res_as_dict = wms_resource.get_as_dict()
     created_wms_resource = _api_resource_action(context, wms_res_as_dict, RESOURCE_CREATE_ACTION)

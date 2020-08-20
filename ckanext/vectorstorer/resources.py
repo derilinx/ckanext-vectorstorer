@@ -1,7 +1,6 @@
 from urlparse import urlparse, urljoin
 from urllib import urlencode
-
-from . import settings
+from ckanext.vectorstorer import settings
 
 class WMSResource:
     name_extention=" Web Map Service in GeoServer"

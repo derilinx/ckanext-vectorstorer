@@ -5,7 +5,7 @@ from geoserver.catalog import Catalog
 from ckan.lib.base import BaseController, c, request, \
                           response, session, render, config, abort
 from ckan.plugins import toolkit
-
+from ckan import logic
 from .. import settings
 
 from geoserver.catalog import UploadError
