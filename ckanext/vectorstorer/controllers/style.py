@@ -1,9 +1,12 @@
 import os
 from lxml import etree
+from ckan.common import config
 from geoserver.catalog import Catalog
 from ckan.lib.base import BaseController, c, request, \
                           response, session, render, config, abort
 from ckan.plugins import toolkit
+
+from .. import settings
 
 from geoserver.catalog import UploadError
 from ckan.logic import *
@@ -16,13 +19,14 @@ redirect = toolkit.redirect_to
 
 import logging
 log = logging.getLogger(__name__)
-
+log.setLevel(logging.DEBUG)
+NotFound = logic.NotFound
+NotAuthorized = logic.NotAuthorized
 
 class NotVectorStorerWMS(Exception):
     pass
 
 class StyleController(BaseController):
-    
     def create_form(self, id, resource_id):
         self._get_context(id, resource_id)
         return render('style/upload_sld_form.html')
@@ -91,7 +95,7 @@ class StyleController(BaseController):
                 # If it's not really UTF-8
                 log.error("Exception decoding UTF8: %s", msg)
                 return "<!-- Style is corrypt, please replace --!>"
-	    
+ 
     def _get_catalog(self):
         geoserver_url=config['ckanext-vectorstorer.geoserver_url']
         geoserver_admin = config['ckanext-vectorstorer.geoserver_admin']
@@ -99,11 +103,11 @@ class StyleController(BaseController):
         return Catalog(geoserver_url + '/rest', username=geoserver_admin, password=geoserver_password)
     
     def _get_context(self,id,resource_id):
-	context = {'model': model, 'session': model.Session,
+        context = {'model': model, 'session': model.Session,
                    'user': c.user}
-	  
+
         try:
-	    _check_access('package_update',context, {'id':id })
+            _check_access('package_update',context, {'id':id })
             c.resource = get_action('resource_show')(context,
                                                      {'id': resource_id})
             c.package = get_action('package_show')(context, {'id': id})
@@ -154,4 +158,3 @@ class StyleController(BaseController):
             c.sld_body=sld_body
             c.error=e
 
-	    

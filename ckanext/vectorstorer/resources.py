@@ -1,4 +1,7 @@
 from urlparse import urlparse, urljoin
+from urllib import urlencode
+
+from . import settings
 
 class WMSResource:
     name_extention=" Web Map Service in GeoServer"
@@ -7,7 +10,7 @@ class WMSResource:
     _description= None
     _package_id= None
     _url= None
-    _format= u'WMS'
+    _format= settings.WMS_FORMAT
     _parent_resource_id=None
     _wms_server= None
     _wms_layer= None
@@ -23,15 +26,22 @@ class WMSResource:
         self._wms_server=wms_server
         self._wms_layer=wms_layer
 
-
     def get_as_dict(self):
         server_parts = self._wms_server.split('/')
         without_wms = server_parts[0:-1]
         with_wms = server_parts[-1]
         base = '/'.join(without_wms)
-        layer_parts = self._wms_layer.split(':')
+        # If we've got a namespace, we can use Namespace/Layer in the url to constrain the getcapabilities call
+        # If we don't have a namespace, then we're making a request for the root getCapabilities, which is large
+        # and we can't add the layer to constrain in the url. (but we do in the parameters, required for the map)
+        try:
+            namespace, layer = self._wms_layer.split(':')
+            layer_parts =  "%s/" % '/'.join(self._wms_layer.split(':'))
+        except:
+            layer_parts = ''
+
         #Filtered GetCapabilties URL
-        url = base + '/' + layer_parts[0] + '/' + layer_parts[1] + '/' + with_wms + self._get_capabilities_url 
+        url = base + '/' + layer_parts + with_wms + self._get_capabilities_url + "&" + urlencode({'layers':self._wms_layer})
         resource = {
           "package_id":unicode(self._package_id),
           "url":self._wms_server + self._get_capabilities_url,
@@ -53,7 +63,7 @@ class DBTableResource:
     _package_id= None
     _url= None
     _url_type='datastore'
-    _format= 'DB_TABLE'
+    _format= settings.DB_TABLE_FORMAT
     _datastore_active=True
     _parent_resource_id=None
     _geometry= None

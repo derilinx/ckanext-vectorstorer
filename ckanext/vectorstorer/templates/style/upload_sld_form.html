@@ -1,7 +1,5 @@
 {% extends "style/main.html" %}
 
-{% set style_controller = 'ckanext.vectorstorer.controllers.style:StyleController' %}
-
 {% block sld_actions %}
     
     <h3>Upload an SLD XML File</h3>
@@ -11,7 +9,7 @@
 	    enctype="multipart/form-data">
 	    <input id="file" name="sld_file" accept="*/xml" type="file" value="" />
 	    <br> <br>
-	    <input type="submit" value="Upload" />
+	    <input type="submit" value="Upload and Edit" />
 	</form>
 
     {% endblock %}
@@ -36,7 +34,7 @@
     {% endif %}
     
     {% if c.sld_body %}
-	{% snippet 'style/snippets/sld_editor.html', action='edit',id=c.pkg.id,resource_id=c.resource.id,sld_body=c.sld_body %}
+	{% snippet 'style/snippets/sld_editor.html', action='edit', id=c.pkg.id, resource_id=c.resource.id, sld_body=c.sld_body %}
     {% endif %}
   
 

@@ -28,7 +28,7 @@ class Vector:
         driver = ogr.GetDriverByName(gdal_driver)
         self.dataSource = driver.Open(file_path, 0)
         if self.dataSource is None:
-            raise 'Could not open %s' % file_path
+            raise IOError('Could not open %s' % file_path)
 
     def get_layer_count(self):
         return self.dataSource.GetLayerCount()
@@ -36,8 +36,21 @@ class Vector:
     def get_layer(self, layer_idx):
         return self.dataSource.GetLayer(layer_idx)
 
+    def preflight_layer(self, layer):
+        # parse layer and push to db
+        layer.ResetReading()
+        feat = layer.GetNextFeature()
+        feat_geom = feat.GetGeometryRef()
+        try:
+            coordinate_dimension = feat_geom.GetCoordinateDimension()
+        except AttributeError:
+            # This is from ESRI geojsons that don't actually have a geo field
+            return False
+        return True
+    
     def handle_layer(self, layer, geom_name, table_name):
         log.debug("handle_layer")
+        # parse layer and push to db
         srs = self.get_SRS(layer)
         featureCount = layer.GetFeatureCount()
         layerDefinition = layer.GetLayerDefn()
@@ -46,7 +59,11 @@ class Vector:
         layer.ResetReading()
         feat = layer.GetNextFeature()
         feat_geom = feat.GetGeometryRef()
-        coordinate_dimension = feat_geom.GetCoordinateDimension()
+        try:
+            coordinate_dimension = feat_geom.GetCoordinateDimension()
+        except AttributeError:
+            # This is from ESRI geojsons that don't actually have a geo field
+            return False
         layer.ResetReading()
         log.debug(fields)
         if "CKAN_ID" in fields:
@@ -58,6 +75,8 @@ class Vector:
         else:
             self._db.create_table(table_name, fields, geom_name, srs, coordinate_dimension)
         self.write_to_db(table_name, layer, srs, geom_name)
+        log.debug('wrote database table %s', table_name)
+        return True
 
     def get_SRS(self, layer):
         if not layer.GetSpatialRef() == None:

@@ -1,4 +1,4 @@
-from pylons import config
+from ckan.common import config
 
 import sys
 sys.path.append(config.get('ckanext-vectorstorer.gdal_folder', '/usr/lib/python2.7/dist-packages'))
@@ -29,7 +29,9 @@ SUPPORTED_DATA_FORMATS = [
     'geojson',
     'sqlite',
     'geopackage',
-    'gpkg']
+    'gpkg',
+    'shp'
+]
 
 ARCHIVE_FORMATS=[
     'zip',

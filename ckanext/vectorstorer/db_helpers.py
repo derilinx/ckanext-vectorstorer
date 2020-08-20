@@ -1,11 +1,11 @@
 import psycopg2
 import urlparse
-
 import logging
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
 class DB:
+
     def __init__(self,db_conn_params):
         result = urlparse.urlparse(db_conn_params)
         user = result.username
@@ -52,7 +52,7 @@ class DB:
 
         join_target_id = self.join_target_id()
 
-        self.cursor.execute("""CREATE TABLE "%s" (_id serial PRIMARY KEY, %s);""" % (table_name,fin))
+        self.cursor.execute("""CREATE TABLE "%s" (_id serial PRIMARY KEY, %s);""" % (table_name,fin.decode('utf-8')))
         self.cursor.execute("SELECT AddGeometryColumn (%s,'the_geom',%s, %s, %s);",
                                     (table_name, srs, geometry, coordinate_dimension))
         self.cursor.execute("""
@@ -79,9 +79,9 @@ class DB:
 
     def insert_to_table(self,table,fields,geometry_text,convert_to_multi,srs):
         if convert_to_multi:
-            insert=("INSERT INTO \"%s\" VALUES (%s ST_Multi(ST_GeomFromText('%s',%s)));"%(table,fields,geometry_text,srs))
+            insert=("INSERT INTO \"%s\" VALUES (%s ST_Multi(ST_GeomFromText('%s',%s)));"%(table,fields.encode('utf-8').decode('utf-8'),geometry_text,srs))
         else:
-            insert=("INSERT INTO \"%s\" VALUES (%s ST_GeomFromText('%s',%s));"%(table,fields,geometry_text,srs)) 
+            insert=("INSERT INTO \"%s\" VALUES (%s ST_GeomFromText('%s',%s));"%(table,fields.encode('utf-8').decode('utf-8'),geometry_text,srs)) 
         self.cursor.execute(insert)
 
     def create_ckan_mapping(self, table_name):
