@@ -8,7 +8,6 @@ from ckan.lib.base import BaseController, c, request, \
 from ckan.plugins import toolkit
 
 from .. import settings
-
 from geoserver.catalog import UploadError
 from ckan.logic import *
 from ckan.common import _
@@ -21,8 +20,6 @@ redirect = toolkit.redirect_to
 import logging
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
-NotFound = logic.NotFound
-NotAuthorized = logic.NotAuthorized
 
 class NotVectorStorerWMS(Exception):
     pass
