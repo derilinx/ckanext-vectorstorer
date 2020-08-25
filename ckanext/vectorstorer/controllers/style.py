@@ -154,5 +154,6 @@ class StyleController(BaseController):
             c.success=True
 
         except UploadError, e:
+            log.error(e)
             c.sld_body=sld_body
             c.error=e
