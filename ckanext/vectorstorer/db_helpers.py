@@ -24,7 +24,7 @@ class DB:
             return False
 
     def create_table(self,table_name,fin,geometry,srs,coordinate_dimension):
-        self.cursor.execute("CREATE TABLE \"%s\" (_id serial PRIMARY KEY, %s);"%(table_name, fin))
+        self.cursor.execute("CREATE TABLE \"%s\" (_id serial PRIMARY KEY, %s);"%(table_name, fin.decode('utf-8')))
         self.cursor.execute("SELECT AddGeometryColumn (%s,'the_geom',%s, %s, %s);",
                             (table_name, srs, geometry, coordinate_dimension))
 
