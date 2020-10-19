@@ -20,6 +20,8 @@ redirect = toolkit.redirect_to
 import logging
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
+NotFound = logic.NotFound
+NotAuthorized = logic.NotAuthorized
 
 class NotVectorStorerWMS(Exception):
     pass
