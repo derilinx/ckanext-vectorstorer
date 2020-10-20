@@ -11,6 +11,7 @@ from .. import settings
 from geoserver.catalog import UploadError
 from ckan.logic import *
 from ckan.common import _
+from ckan import logic
 _check_access = check_access
 
 NoFileSelected='No XML file was selected.'
