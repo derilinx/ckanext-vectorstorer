@@ -18,7 +18,6 @@ class WMSResource:
 
     def __init__(self,package_id, name, description, parent_resource_id, wms_server,wms_layer, lang=''):
         self._package_id=package_id
-        self._name=name + self.name_extention
         self._description=description
         base_url = urlparse(wms_server)
         self._url=urljoin( base_url.netloc,self._get_capabilities_url)
@@ -26,6 +25,17 @@ class WMSResource:
         self._wms_server=wms_server
         self._wms_layer=wms_layer
         self.lang = lang
+        self._prepare_name(name)
+
+    def _prepare_name(self, val):
+        self._name_translated = dict()
+        self._name = ''
+        if type(val) is dict:
+            for l in val:
+                val[l] = val[l].replace(DBTableResource.name_extention, '') + self.name_extention
+            self._name_translated = val
+        else:
+            self._name = val + self.name_extention
 
     def get_as_dict(self):
         server_parts = self._wms_server.split('/')
@@ -53,6 +63,7 @@ class WMSResource:
             "wms_server": self._wms_server,
             "wms_layer": self._wms_layer,
             "name":self._name,
+            "name_translated": self._name_translated,
             "description": self._description,
             "MD_DataIdentification_language": self.lang,
         }
@@ -74,14 +85,22 @@ class DBTableResource:
 
     def __init__(self,package_id, name, description, parent_resource_id, url, geometry, lang=''):
         self._package_id=package_id
-        self._name=name + self.name_extention
         self._description=description
         self._url=url
         self._parent_resource_id=parent_resource_id
         self._geometry=geometry
         self.lang = lang
+        self._prepare_name(name)
 
-
+    def _prepare_name(self, val):
+        self._name_translated = dict()
+        self._name = ''
+        if type(val) is dict:
+            for l in val:
+                val[l] = val[l] + self.name_extention
+            self._name_translated = val
+        else:
+            self._name = val + self.name_extention
 
     def get_as_dict(self):
         resource = {
@@ -94,6 +113,7 @@ class DBTableResource:
             'vectorstorer_resource': self._vectorstorer_resource,
             "datastore_active": self._datastore_active,
             "name":self._name,
+            "name_translated": self._name_translated,
             "description": self._description,
             "MD_DataIdentification_language": self.lang,
 

@@ -266,7 +266,7 @@ def _add_db_table_resource(context, resource, geom_name, layer_name):
     log.debug(resource.get('MD_DataIdentification_language',''))
     log.debug(type(resource.get('MD_DataIdentification_language','')))
     db_table_resource = DBTableResource(context['package_id'],
-                                        layer_name,
+                                        layer_name or json.loads(resource.get('name_translated', "")),
                                         "Datastore resource derived from \"" + layer_name + "\" in [this resource](" + resource['id'] + "), available in CKAN and GeoServer Store",
                                         resource['id'],
                                         'http://_datastore_only_resource',
@@ -287,7 +287,7 @@ def _add_wms_resource(context, layer_name, parent_resource, wms_server, wms_laye
     log.debug(parent_resource.get('MD_DataIdentification_language',''))
     log.debug(type(parent_resource.get('MD_DataIdentification_language','')))
     wms_resource = WMSResource(context['package_id'],
-                               layer_name,
+                               layer_name or parent_resource.get('name_translated', ''),
                                "WMS publishing of the GeoServer layer \"" + layer_name + "\" stored in [this resource](" + parent_resource['id']  + ")",
                                parent_resource['id'],
                                wms_server,
