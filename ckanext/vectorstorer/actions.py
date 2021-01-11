@@ -32,6 +32,7 @@ def create_resource_given_wms_layer(resource):
     _resource_format = resource.get('format', '').lower().strip()
     _workspace = config['ckanext-vectorstorer.geoserver_workspace']
     layer_name = resource.get('odm_geoserver_layer_name', '')
+    external_geoserver_wms_service = resource.get('odm_external_geoserver_url', '')
 
     if _resource_format == "wms" and resource.get('odm_geoserver_layer_name', ''):
         if resource.get('vectorstorer_resource', ''):
@@ -39,11 +40,7 @@ def create_resource_given_wms_layer(resource):
             raise ValidationError("WMS resources is associated with DB table cannot change layer name. "
                                   "Please create a new resource")
         else:
-            resource['wms_layer'] = "{}:{}".format(_workspace, layer_name)
-            resource['vectorstorer_resource'] = ""
-            resource['wms_server'] = config['ckanext-vectorstorer.geoserver_url'] + "/wms"
-            resource['layer_url'] = v_hlp.generate_wms_url(layer_name, _workspace)
-            resource['url'] = v_hlp.generate_wms_url(layer_name, _workspace)
+            resource = v_hlp.generate_wms_metadata(resource, layer_name, external_geoserver_wms_service, _workspace)
 
     if _resource_format != "wms" and resource.get('odm_geoserver_layer_name', ''):
         raise ValidationError(["You have given Layer Name but file format is not wms."

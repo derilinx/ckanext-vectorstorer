@@ -33,19 +33,37 @@ def vectorstore_get_workspace():
     return config['ckanext-vectorstorer.geoserver_workspace'] or ''
 
 
-def generate_wms_url(layer_name, workspace):
+def generate_wms_metadata(resource, layer_name, external_geoserver_wms_service, workspace):
     """
-    Generate wms layer given layer name as work space
-    :param layer_name: str
-    :param workspace: str
-    :return: str
+    Generate wms layer given layer name, geoserver and work space
+    :param resource:
+    :param layer_name:
+    :param external_geoserver_wms_service:
+    :param workspace:
+    :return:
     """
-    layer_url = "{url}/{workspace}/{layer}/wms?service=WMS&request=GetCapabilities&layers={workspace}:{layer}".format(
-        url=config['ckanext-vectorstorer.geoserver_url'],
-        workspace=workspace,
-        layer=layer_name
-    )
-    return layer_url
+
+    if not external_geoserver_wms_service:
+        layer_url = "{url}/{workspace}/{layer}/wms?service=WMS&request=GetCapabilities&layers={workspace}:{layer}".format(
+            url=config['ckanext-vectorstorer.geoserver_url'],
+            workspace=workspace,
+            layer=layer_name
+        )
+        resource['wms_server'] = config['ckanext-vectorstorer.geoserver_url'] + "/wms"
+        resource['wms_layer'] = "{}:{}".format(workspace, layer_name)
+    else:
+        layer_url = "{external_geoserver_wms_service}?service=WMS&request=GetCapabilities&layers={layer}".format(
+            external_geoserver_wms_service=external_geoserver_wms_service,
+            layer=layer_name
+        )
+        resource['wms_server'] = external_geoserver_wms_service
+        resource['wms_layer'] = "{}".format(layer_name)
+
+    resource['vectorstorer_resource'] = ""
+    resource['layer_url'] = layer_url
+    resource['url'] = layer_url
+
+    return resource
 
 
 def is_layer_exists(layer_name, workspace):
