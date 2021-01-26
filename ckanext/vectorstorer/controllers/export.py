@@ -5,7 +5,7 @@ from ckan.common import config
 from ckan.lib.base import BaseController, c, request, \
     response, session, render, config, abort
 
-from ckan.logic import get_action ,check_access, model
+from ckan.logic import get_action ,check_access, model, NotFound, NotAuthorized
 import urlparse
 import shutil
 
