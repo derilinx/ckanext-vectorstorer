@@ -5,7 +5,7 @@ from ckan.lib.base import abort
 from ckan.common import _
 import ckan
 from ckanext.vectorstorer import helper as v_hlp
-from . import settings, resource_actions, actions
+from ckanext.vectorstorer import settings, resource_actions, actions
 from ckanext.vectorstorer import validators
 from ckan.common import config
 import logging
@@ -106,9 +106,9 @@ class VectorStorer(SingletonPlugin):
 
     def update_config(self, config):
 
-        toolkit.add_public_directory(config, 'public')
-        toolkit.add_template_directory(config, 'templates')
-        toolkit.add_resource('public', 'ckanext-vectorstorer')
+        toolkit.add_public_directory(config, '../public')
+        toolkit.add_template_directory(config, '../templates')
+        toolkit.add_resource('../public', 'ckanext-vectorstorer')
 
     def notify(self, entity, operation=None):
 
